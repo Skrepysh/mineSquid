@@ -1,0 +1,4 @@
+E:/minecraft/game
+E:/pySelector
+//  first line is path to pySelector.exe (not including / and "pySelector.exe"
+//  second line is minecraft home dir (there you can find "config", "versions", "mods" and other folder
