@@ -1,19 +1,22 @@
-from worker import worker, verpicker, finish
 import os
-import time
-from filerpy import version_define, dirdefine
-from preparator import preparator
+from tkinter import messagebox
+from filerpy import pySelector
+from filerpy import version_define
 from preparator import error
-programdir = dirdefine("settings.txt", "prog")
-minedir = dirdefine("settings.txt", "mine")
+from preparator import preparator
+from worker import worker, verpicker
+
+programdir = pySelector.prog_preparator()
+minedir = pySelector.mine_preparator()
+
 
 def run(version):
     progver = version_define(version)
-    if preparator("init") == "stopnow":
-        finish("normal")
-    else:
-        pass
     while True:
+        if preparator("init") == "stopnow":
+            break
+        else:
+            pass
         try:
             os.chdir(f"{programdir}/mods")
             vers = [e for e in os.listdir() if os.path.isdir(e)]
@@ -38,5 +41,5 @@ def run(version):
                 continue
         except Exception:
             print("неизвестная ошибка")
-            time.sleep(3)
+            messagebox.showerror(title="Ошибка", message="Неизвестная ошибка")
             break

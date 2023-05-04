@@ -2,10 +2,9 @@ import os
 import shutil
 import time
 from pathlib import Path
-from filerpy import dirdefine
-programdir = str(dirdefine("settings.txt", "prog"))
-minedir = str(dirdefine("settings.txt", "mine"))
-
+from filerpy import pySelector
+programdir = pySelector.prog_preparator()
+minedir = pySelector.mine_preparator()
 
 
 def finish(type):
@@ -20,6 +19,7 @@ def finish(type):
         time.sleep(3)
         while True:
             break
+
 
 def verpicker(progver, vers):
     print("Привет!")
@@ -53,11 +53,13 @@ def verpicker(progver, vers):
             print("Выбрана версия " + a)
             return a
 
+
 def worker(version):
     if version == "restok":
         finish("normal")
     elif version == "stop":
         finish("error")
+        exit()
     elif version == "stop_soft":
         finish("normal")
     else:

@@ -1,12 +1,16 @@
 import os
 import time
-from filerpy import dirdefine
-programdir = dirdefine("settings.txt", "prog")
-minedir = dirdefine("settings.txt", "mine")
+from filerpy import pySelector
+from tkinter import messagebox
+
+programdir = pySelector.prog_preparator()
+minedir = pySelector.mine_preparator()
+
 
 def error():
     time.sleep(2)
     os.system("cls")
+
 
 def preparator(type_of_work):
     os.chdir(programdir)
@@ -25,8 +29,8 @@ def preparator(type_of_work):
                 print("Папка создана, повторите попытку")
                 error()
         except FileNotFoundError:
-            print("Не удалось создать папку!\nПроверьте settings.txt")
-            time.sleep(2)
+            messagebox.showerror(title="Ошибка",
+                                 message="Не удалось создать папку mods в корне игры!\nПроверьте paths.py")
             return "stopnow"
         if not os.path.exists(f"{programdir}/mods"):
             print("Отсутствует хранилище модпаков:-(")
@@ -39,8 +43,7 @@ def preparator(type_of_work):
             time.sleep(2)
             error()
         else:
-            print("Какой-то файл/папка не найден.\nПроверьте settings.txt")
-            time.sleep(2)
+            print("hfdsjkhfljka")
             return "stopnow"
     if type_of_work == "init":
         if not os.path.exists(f"{programdir}/backup"):
@@ -57,8 +60,8 @@ def preparator(type_of_work):
                 print("Папка создана, повторите попытку")
                 error()
         except FileNotFoundError:
-            print("Не удалось создать папку!\nПроверьте settings.txt")
-            time.sleep(2)
+            messagebox.showerror(title="Ошибка",
+                                 message="Не удалось создать папку mods в корне игры!\nПроверьте paths.py")
             return "stopnow"
         if not os.path.exists(f"{programdir}/mods"):
             print("Отсутствует хранилище модпаков:-(")
@@ -70,4 +73,3 @@ def preparator(type_of_work):
             print("В корне программы создана папка mods, поместите туда свои модпаки")
             time.sleep(2)
             error()
-

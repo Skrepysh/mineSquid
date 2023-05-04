@@ -1,3 +1,0 @@
-minecraft directory !!DO NOT use quotes!!
-//  FIRST line is minecraft home dir (there you can find "config", "versions", "mods" and other folders)
-//  PLS FILL FIRST LINE!!!!!
