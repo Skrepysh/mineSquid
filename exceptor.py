@@ -1,23 +1,24 @@
+import logging
 import os
-from tkinter import messagebox
-from filerpy import pySelector
-from filerpy import version_define
+import time
+from filerpy import ZeroSelector, version_define, config
 from preparator import error
 from preparator import preparator
 from worker import worker, verpicker
+from tkinter import messagebox as msg
 
-programdir = pySelector.prog_preparator()
-minedir = pySelector.mine_preparator()
+programdir = config("prog")
+minedir = config("mine")
 
 
 def run(version):
     progver = version_define(version)
     while True:
-        if preparator("init") == "stopnow":
-            break
-        else:
-            pass
         try:
+            if preparator("init") == "stopnow":
+                break
+            else:
+                pass
             os.chdir(f"{programdir}/mods")
             vers = [e for e in os.listdir() if os.path.isdir(e)]
             worker(verpicker(progver, vers))
@@ -25,8 +26,15 @@ def run(version):
         except IndexError:
             print("неверное значение\nперезапуск")
             error()
+        except PermissionError:
+            msg.showerror(title="Ошибка доступа", message="Произошло повреждение файлов программы."
+                                                          "\nНеобходимо произвести запуск от имени администратора!")
+            exit()
         except OverflowError:
             print("многацифер\nперезапуск")
+            error()
+        except ZeroSelector:
+            print("неверное значение\nперезапуск")
             error()
         except ValueError:
             print("что ты несешь\nперезапуск")
@@ -39,7 +47,9 @@ def run(version):
             else:
                 os.system("cls")
                 continue
-        except Exception:
+        except Exception as err:
             print("неизвестная ошибка")
-            messagebox.showerror(title="Ошибка", message="Неизвестная ошибка")
+            print("Сообщите разработчику следующий код ошибки:")
+            logging.error(err, exc_info=True)
+            time.sleep(7)
             break

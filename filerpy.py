@@ -1,5 +1,5 @@
 import os
-from paths import minedir, programdir
+import configparser
 
 
 def version_define(version):
@@ -11,25 +11,26 @@ def version_define(version):
         return version
 
 
-class prep:
-    def __init__(self, minedirectory, programdirectory):
-        self.minedir = minedirectory
-        self.programdir = programdirectory
-
-    def mine_preparator(self):
-        if self.minedir == "" or not os.path.exists(self.minedir):
-            self.minedir = "%appdata%/.minecraft"
-            return self.minedir
+def config(type):
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    minedir = config["paths"]["minecraft"]
+    programdir = config["paths"]["program"]
+    if type == "mine":
+        if minedir == "" or not os.path.exists(minedir):
+            minedir = "%appdata%/.minecraft"
+            return minedir
         else:
             minedir.replace('\\', '/')
-            return self.minedir
-
-    def prog_preparator(self):
-        if self.programdir == "" or not os.path.exists(self.programdir):
-            self.programdir = os.getcwd()
-            return self.programdir
+            return minedir
+    if type == "prog":
+        if programdir == "" or not os.path.exists(programdir):
+            programdir = os.getcwd()
+            return programdir
         else:
-            return self.programdir
+            programdir.replace('\\', '/')
+            return programdir
 
 
-pySelector = prep(minedir, programdir)
+class ZeroSelector(Exception):
+    pass

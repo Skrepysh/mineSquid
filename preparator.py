@@ -1,10 +1,10 @@
 import os
 import time
-from filerpy import pySelector
+from filerpy import config
 from tkinter import messagebox
 
-programdir = pySelector.prog_preparator()
-minedir = pySelector.mine_preparator()
+programdir = config("prog")
+minedir = config("mine")
 
 
 def error():
@@ -29,8 +29,10 @@ def preparator(type_of_work):
                 print("Папка создана, повторите попытку")
                 error()
         except FileNotFoundError:
+            os.system("cls")
             messagebox.showerror(title="Ошибка",
-                                 message="Не удалось создать папку mods в корне игры!\nПроверьте paths.py")
+                                 message="Не удалось создать папку mods в корне игры!\nПроверьте config.ini")
+            os.system(f"notepad {programdir}/config.ini")
             return "stopnow"
         if not os.path.exists(f"{programdir}/mods"):
             print("Отсутствует хранилище модпаков:-(")
@@ -60,8 +62,10 @@ def preparator(type_of_work):
                 print("Папка создана, повторите попытку")
                 error()
         except FileNotFoundError:
+            os.system("cls")
             messagebox.showerror(title="Ошибка",
-                                 message="Не удалось создать папку mods в корне игры!\nПроверьте paths.py")
+                                 message="Не удалось создать папку mods в корне игры!\nПроверьте config.ini")
+            os.system(f"notepad {programdir}/config.ini")
             return "stopnow"
         if not os.path.exists(f"{programdir}/mods"):
             print("Отсутствует хранилище модпаков:-(")

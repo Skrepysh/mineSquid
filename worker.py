@@ -2,23 +2,17 @@ import os
 import shutil
 import time
 from pathlib import Path
-from filerpy import pySelector
-programdir = pySelector.prog_preparator()
-minedir = pySelector.mine_preparator()
+from filerpy import ZeroSelector
+from filerpy import config
+from sys import exit
+programdir = config("prog")
+minedir = config("mine")
 
 
-def finish(type):
-    if type == "error":
-        print("Использовать число 0 нельзя!")
-        print("окно закроется через 3 секунды")
-        time.sleep(3)
-        while True:
-            break
-    if type == "normal":
-        print("окно закроется через 3 секунды")
-        time.sleep(3)
-        while True:
-            break
+def finish():
+    print("завершение работы...")
+    time.sleep(1)
+    exit()
 
 
 def verpicker(progver, vers):
@@ -41,13 +35,13 @@ def verpicker(progver, vers):
         p = Path(f"{minedir}/pySelector/")
         p.rename("mods")
         print("Бэкап восстановлен")
-        return "restok"
+        return "restored"
     elif selector == "q" or selector == "quit":
-        return "stop_soft"
+        return "quit"
     else:
         selector = int(selector)
         if selector == 0:
-            return "stop"
+            raise ZeroSelector
         else:
             a = vers.pop(selector - 1)
             print("Выбрана версия " + a)
@@ -55,13 +49,10 @@ def verpicker(progver, vers):
 
 
 def worker(version):
-    if version == "restok":
-        finish("normal")
-    elif version == "stop":
-        finish("error")
-        exit()
-    elif version == "stop_soft":
-        finish("normal")
+    if version == "restored":
+        finish()
+    if version == "quit":
+        finish()
     else:
         print("работаю..")
         os.chdir(minedir)
@@ -74,4 +65,4 @@ def worker(version):
         p = Path(f"{minedir}/pySelector/")
         p.rename("mods")
         print("готово")
-        finish("normal")
+        finish()
