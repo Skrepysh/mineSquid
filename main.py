@@ -1,9 +1,3 @@
-from exceptor import run
-
-
-program_version = "2.5.1"
-
-
+from pyselector import run
+program_version = "2.6"
 run(program_version)
-
-# please, check settings.txt before panic about program is not working
