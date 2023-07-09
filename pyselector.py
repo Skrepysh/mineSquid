@@ -5,7 +5,6 @@ import sys
 import shutil
 import time
 from progress.bar import Bar
-from pathlib import Path
 import datetime as dt
 from tkinter import messagebox as msg
 from sys import exit
@@ -18,6 +17,7 @@ class ZeroSelector(Exception):
 class PySelector:
     def __init__(self, version):
         self.dt = dt.datetime.now()
+        self.user_choice = "ОШИБКА"
         self.list = ["ОШИБКА!", "УДАЛИТЕ ЭТУ ВЕРСИЮ ПРОГРАММЫ!!!"]
         self.configfile_name = 'config'
         self.version = str(version)
@@ -40,7 +40,7 @@ class PySelector:
 
     def setup_logger(self, mode=0):
         if not os.path.exists(f"{self.userappdata}\\logs"):
-            os.mkdir(f"{self.userappdata}\\logs")
+            os.makedirs(f"{self.userappdata}\\logs")
         if mode == 0:
             logging.basicConfig(level=logging.DEBUG,
                                 filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
@@ -126,11 +126,8 @@ class PySelector:
         errs = 0
         logging.info("Чекер завершил работу")
 
-    def worker(self, select="0"):
-        logging.info("Worker запущен")
-        os.chdir(f"{self.userappdata}\\modpacks\\")
-        self.list = [e for e in os.listdir() if os.path.isdir(e)]
-        logging.info("Составлен список модпаков", )
+    def ui(self):
+        logging.info("UI запущен")
         os.chdir(self.game_directory)
         print("Привет!")
         print("Версия программы: " + self.version)
@@ -151,29 +148,12 @@ class PySelector:
                 print(str(counter) + str(divider) + str(ver))
                 counter += 1
         print("*")
-        logging.info(f"Количество модпаков: {str(counter)}")
+        logging.info(f"Количество модпаков: {int(counter) - 1}")
         print("Чтобы восстановить бэкап напишите restore")
-        if select == "0":
-            logging.info("Ждем выбора модпака пользователем...")
-            selector = str(input("Выберите версию: "))
-        else:
-            selector = str(select)
+        logging.info("Ждем выбора модпака пользователем...")
+        selector = str(input("Выберите версию: "))
         if selector == "restore":
-            logging.info("Пользователь запустил восстановление бэкапа")
-            pb4 = Bar("Восстановление", max=3)
-            shutil.rmtree(f"{self.game_directory}\\mods")
-            logging.info("Папка mods удалена")
-            pb4.next()
-            shutil.copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\tempfiles\\")
-            logging.info("Бэкап скопирован во временную папку")
-            pb4.next()
-            p = Path(f"{self.game_directory}\\tempfiles\\")
-            p.rename("mods")
-            logging.info("Папка переименована в mods, бэкап восстановлен")
-            pb4.next()
-            pb4.finish()
-            print("Бэкап восстановлен")
-            self.finish()
+            self.restore_backup()
         elif selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")
             self.finish()
@@ -183,32 +163,12 @@ class PySelector:
                 logging.error("Пользователь ввел '0'!!!")
                 raise ZeroSelector
             else:
-                user_choice = self.list.pop(selector - 1)
-                logging.info(f"Пользователь выбрал модпак: {selector} ___ Имя модпака: {user_choice}")
-                print("Выбрана версия " + user_choice)
-                print("работаю..")
-                logging.info("Начата работа над модпаком...")
-                pb5 = Bar("Выполнение", max=5)
-                shutil.rmtree(f"{self.userappdata}\\backup")
-                logging.info("Удален текущий бэкап")
-                pb5.next()
-                shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
-                logging.info("Сделан бэкап текущих модов")
-                pb5.next()
-                shutil.rmtree(f"{self.game_directory}\\mods")
-                logging.info("Папка mods удалена")
-                pb5.next()
-                shutil.copytree(f"{self.userappdata}\\modpacks\\{user_choice}", f"{self.game_directory}\\tempfiles\\")
-                logging.info("Модпак скопирован в директорию игры")
-                pb5.next()
-                p = Path(f"{self.game_directory}\\tempfiles\\")
-                p.rename("mods")
-                logging.info("Модпак переименован в mods")
-                pb5.next()
-                pb5.finish()
-                print("готово")
-                self.finish()
-            logging.info("Worker завершил работу")
+                self.load_modpack(selector - 1)
+
+    def build_list(self):
+        os.chdir(f"{self.userappdata}\\modpacks")
+        self.list = [e for e in os.listdir() if os.path.isdir(e)]
+        logging.info("Составлен список модпаков")
 
     def build_config(self):
         logging.info('Запущен build_config')
@@ -218,8 +178,8 @@ class PySelector:
             '; do not use parameter below, if do not know, what are you doing!!!!\nprogram = ')
         file.close()
         logging.info('Конфиг создан успешно')
-        msg.showerror(title="Файлы были повреждены!",
-                      message='Папка с данными была повреждена:-( Проверьте config.ini!!!')
+        msg.showinfo(title="Привет!",
+                      message='Ты запустил эту программу в первый раз, и ее надо настроить. Проверь config.ini!')
         os.system(f"notepad {self.userappdata}/config.ini")
         logging.info('Конфиг открыт в блокноте')
         self.error()
@@ -263,15 +223,61 @@ class PySelector:
                 else:
                     pass
 
-    def run(self, select2="0"):
+    def load_modpack(self, modpack_number):
+        if modpack_number > len(self.list) - 1:
+            self.run()
+        else:
+            pass
+        self.user_choice = self.list[modpack_number]
+        print("Выбрана версия " + self.user_choice)
+        print("работаю..")
+        logging.info("Начата работа над модпаком...")
+        pb5 = Bar("Выполнение", max=4)
+        shutil.rmtree(f"{self.userappdata}\\backup")
+        logging.info("Удален текущий бэкап")
+        pb5.next()
+        shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
+        logging.info("Сделан бэкап текущих модов")
+        pb5.next()
+        shutil.rmtree(f"{self.game_directory}\\mods")
+        logging.info("Папка mods удалена")
+        pb5.next()
+        shutil.copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
+        logging.info("Модпак скопирован в папку mods")
+        logging.info("ГОТОВО!")
+        pb5.next()
+        pb5.finish()
+        print("готово")
+        self.finish()
+
+    def restore_backup(self):
+        logging.info("Пользователь запустил восстановление бэкапа")
+        pb4 = Bar("Восстановление", max=2)
+        if os.path.exists(f"{self.game_directory}\\mods"):
+            shutil.rmtree(f"{self.game_directory}\\mods")
+        else:
+            pass
+        logging.info("Папка mods удалена")
+        pb4.next()
+        shutil.copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
+        logging.info("Бэкап восстановлен")
+        pb4.next()
+        pb4.finish()
+        print("Бэкап восстановлен")
+        self.finish()
+
+    def run(self):
         while True:
             try:
                 self.setup_logger()
                 logging.info(f'Версия программы: {self.version}')
+                if not os.path.exists(f"{self.userappdata}\\config.ini"):
+                    self.build_config()
+                else:
+                    pass
                 os.chdir(self.userappdata)
-                if not os.path.exists("logs"):
-                    os.mkdir("logs")
                 self.read_config()
+                self.build_list()
                 self.checker()
                 logging.info(f'Путь к программе: {self.program_directory}')
                 logging.info(f'Путь к игре: {self.game_directory}')
@@ -280,10 +286,7 @@ class PySelector:
                     shutil.rmtree(f"{self.game_directory}\\tempfiles")
                 else:
                     pass
-                if select2 == "0":
-                    self.worker()
-                else:
-                    self.worker(select=select2)
+                self.ui()
             except IndexError as err:
                 logging.error("IndexError")
                 logging.exception(err)
