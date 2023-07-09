@@ -38,13 +38,18 @@ class PySelector:
         logging.info("Работа программы завершена")
         sys.exit()
 
-    def setup_logger(self):
+    def setup_logger(self, mode=0):
         if not os.path.exists(f"{self.userappdata}\\logs"):
             os.mkdir(f"{self.userappdata}\\logs")
-        logging.basicConfig(level=logging.DEBUG, filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
-                                                          f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
-                                                          f"{self.dt.year}.log", filemode="w",
-                            format="%(asctime)s #%(levelname)s: %(message)s")
+        if mode == 0:
+            logging.basicConfig(level=logging.DEBUG,
+                                filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
+                                         f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
+                                         f"{self.dt.year}.log", filemode="w",
+                                format="%(asctime)s #%(levelname)s: %(message)s")
+        else:
+            logging.basicConfig(level=logging.DEBUG,
+                                format="%(asctime)s #%(levelname)s: %(message)s")
 
     def read_config(self):
         logging.info("Read_config запущен")
@@ -74,15 +79,18 @@ class PySelector:
         logging.info("Конфиг обработан")
 
     def checker(self):
+        errs = 0
         os.chdir(self.program_directory)
         logging.info("Чекер запущен")
         if not os.path.exists(f"{self.userappdata}/backup"):
             logging.warning("Нет папки с бэкапом")
+            errs += 1
             os.mkdir(rf"{self.userappdata}\backup")
             logging.info("Папка создана")
             self.error()
         try:
             if not os.path.exists(f"{self.game_directory}/mods"):
+                errs += 1
                 logging.warning("Нету папки mods в корне игры")
                 os.mkdir(f"{self.game_directory}/mods")
                 logging.info("Папка создана")
@@ -96,6 +104,7 @@ class PySelector:
             logging.info("Конфиг открыт в блокноте")
             sys.exit()
         if not os.path.exists(f"{self.userappdata}/modpacks"):
+            errs += 1
             print("Отсутствует хранилище модпаков:-(")
             logging.warning("Отсутствует хранилище модпаков:-(")
             pb1 = Bar("Создание", max=2)  # прогрессбар для создания папки с модпаками
@@ -110,9 +119,14 @@ class PySelector:
             pb1.finish()
             print("В корне программы создана папка modpacks, поместите туда свои модпаки")
             self.error()
+        if errs == 0:
+            logging.info("Ошибок нет!")
+        else:
+            logging.warning("Были обнаружены ошибки!")
+        errs = 0
         logging.info("Чекер завершил работу")
 
-    def worker(self):
+    def worker(self, select="0"):
         logging.info("Worker запущен")
         os.chdir(f"{self.userappdata}\\modpacks\\")
         self.list = [e for e in os.listdir() if os.path.isdir(e)]
@@ -139,8 +153,11 @@ class PySelector:
         print("*")
         logging.info(f"Количество модпаков: {str(counter)}")
         print("Чтобы восстановить бэкап напишите restore")
-        logging.info("Ждем выбора модпака пользователем...")
-        selector = str(input("Выберите версию: "))
+        if select == "0":
+            logging.info("Ждем выбора модпака пользователем...")
+            selector = str(input("Выберите версию: "))
+        else:
+            selector = str(select)
         if selector == "restore":
             logging.info("Пользователь запустил восстановление бэкапа")
             pb4 = Bar("Восстановление", max=3)
@@ -207,7 +224,46 @@ class PySelector:
         logging.info('Конфиг открыт в блокноте')
         self.error()
 
-    def run(self):
+    def devmode(self):
+        self.setup_logger(mode=1)
+        logging.info("Запущен devmode!!")
+        while True:
+            devm = str(input(">>>"))
+            if devm == "0":
+                self.finish()
+            if devm == "1":
+                logging.warning("Запущено принудительное восстановление конфига")
+                self.build_config()
+            if devm == "2":
+                self.read_config()
+                print(f'Путь к программе: {self.program_directory}')
+                print(f'Путь к игре: {self.game_directory}')
+                print(f'Путь к папке с пользовательскими данными: {self.userappdata}')
+                input("<<<")
+            if devm == "3":
+                logging.warning("Принудительный запуск чекера!")
+                self.read_config()
+                self.checker()
+            if devm == "4":
+                confirm1 = input("?>")
+                if confirm1 == "yes":
+                    shutil.rmtree(f"{self.userappdata}\\logs")
+                    shutil.rmtree(f"{self.userappdata}\\backup")
+                    os.mkdir(f"{self.userappdata}\\logs")
+                    os.mkdir(f"{self.userappdata}\\backup")
+                    logging.warning("Выполнена принудительная очистка папок с логами и бэкапом!!!")
+                else:
+                    pass
+            if devm == "5":
+                confirm2 = input("?>")
+                if confirm2 == "yes":
+                    shutil.rmtree(f"{self.userappdata}\\modpacks")
+                    os.mkdir(f"{self.userappdata}\\modpacks")
+                    logging.warning("Выполнена принудительная очистка папки с модпаками!!!")
+                else:
+                    pass
+
+    def run(self, select2="0"):
         while True:
             try:
                 self.setup_logger()
@@ -224,7 +280,10 @@ class PySelector:
                     shutil.rmtree(f"{self.game_directory}\\tempfiles")
                 else:
                     pass
-                self.worker()
+                if select2 == "0":
+                    self.worker()
+                else:
+                    self.worker(select=select2)
             except IndexError as err:
                 logging.error("IndexError")
                 logging.exception(err)
