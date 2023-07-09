@@ -17,7 +17,7 @@ args.devmode = str(args.devmode)
 if args.devmode == "1":
     ok.devmode()
 else:
-    if args.mp != 0:
+    if args.mp != 0 and args.mp > 0:
         ok.setup_logger()
         ok.read_config()
         ok.build_list()
