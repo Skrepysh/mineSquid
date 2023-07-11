@@ -87,38 +87,30 @@ class PySelector:
             errs += 1
             os.mkdir(rf"{self.userappdata}\backup")
             logging.info("Папка создана")
-            self.error()
         try:
             if not os.path.exists(f"{self.game_directory}/mods"):
                 errs += 1
                 logging.warning("Нету папки mods в корне игры")
                 os.mkdir(f"{self.game_directory}/mods")
                 logging.info("Папка создана")
-                self.error()
         except FileNotFoundError:
             os.system("cls")
             logging.error("Не удалось создать папку mods в корне игры!")
             msg.showwarning(title="Ошибка",
-                            message="Не удалось создать папку mods в корне игры!\nПроверьте config.ini")
+                            message="Не удалось создать папку mods в корне игры, похоже, указан неверный путь!"
+                                    "\nПроверьте config.ini")
             os.system(f"notepad {self.userappdata}/config.ini")
             logging.info("Конфиг открыт в блокноте")
             sys.exit()
         if not os.path.exists(f"{self.userappdata}/modpacks"):
             errs += 1
-            print("Отсутствует хранилище модпаков:-(")
             logging.warning("Отсутствует хранилище модпаков:-(")
-            pb1 = Bar("Создание", max=2)  # прогрессбар для создания папки с модпаками
             os.mkdir(f"{self.userappdata}/modpacks")
             logging.info("Хранилище создано")
-            pb1.next()
             readme = open(f"{self.userappdata}/modpacks/readME PLS.txt", "w")
             readme.write("put your modpacks in this folder")
             readme.close()
             logging.info("Readme создан")
-            pb1.next()
-            pb1.finish()
-            print("В корне программы создана папка modpacks, поместите туда свои модпаки")
-            self.error()
         if errs == 0:
             logging.info("Ошибок нет!")
         else:
@@ -154,7 +146,7 @@ class PySelector:
         selector = str(input("Выберите версию: "))
         if selector == "restore":
             self.restore_backup()
-        elif selector == "q" or selector == "quit":
+        if selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")
             self.finish()
         else:
@@ -179,10 +171,9 @@ class PySelector:
         file.close()
         logging.info('Конфиг создан успешно')
         msg.showinfo(title="Привет!",
-                      message='Ты запустил эту программу в первый раз, и ее надо настроить. Проверь config.ini!')
-        os.system(f"notepad {self.userappdata}/config.ini")
+                     message='Ты запустил эту программу в первый раз, и ее надо настроить. Проверь config.ini!')
         logging.info('Конфиг открыт в блокноте')
-        self.error()
+        os.system(f"notepad {self.userappdata}/config.ini")
 
     def devmode(self):
         self.setup_logger(mode=1)
@@ -222,9 +213,30 @@ class PySelector:
                     logging.warning("Выполнена принудительная очистка папки с модпаками!!!")
                 else:
                     pass
+            if devm == "6":
+                confirm3 = input("?>")
+                if confirm3 == "1":
+                    shutil.rmtree(f"{self.userappdata}\\modpacks")
+                    logging.warning("Папка модпаков удалена!")
+                if confirm3 == "2":
+                    shutil.rmtree(f"{self.userappdata}\\backup")
+                    logging.warning("Папка с бэкапом удалена!")
+                if confirm3 == "3":
+                    shutil.rmtree(f"{self.userappdata}\\logs")
+                    logging.warning("Папка с логами удалена!")
+                else:
+                    pass
+            if devm == "7":
+                confirm4 = input("?>")
+                if confirm4 == "yes":
+                    os.chdir(os.environ["appdata"])
+                    shutil.rmtree("pySelector")
+                    logging.info("Папка с данными пользователя удалена!")
+                else:
+                    pass
 
-    def load_modpack(self, modpack_number):
-        if modpack_number > len(self.list) - 1:
+    def load_modpack(self, modpack_number, mode="0"):
+        if modpack_number > len(self.list) - 1 and mode == "1":
             self.run()
         else:
             pass
