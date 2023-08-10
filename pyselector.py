@@ -7,7 +7,6 @@ import time
 from progress.bar import Bar
 import datetime as dt
 from tkinter import messagebox as msg
-from sys import exit
 
 
 class ZeroSelector(Exception):
@@ -18,12 +17,13 @@ class PySelector:
     def __init__(self, version):
         self.dt = dt.datetime.now()
         self.user_choice = "ОШИБКА"
-        self.list = ["ОШИБКА!", "УДАЛИТЕ ЭТУ ВЕРСИЮ ПРОГРАММЫ!!!"]
-        self.configfile_name = 'config'
+        self.list = []
         self.version = str(version)
-        self.game_directory = "%appdata%/.minecraft"
+        self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
         self.program_directory = os.getcwd()
         self.userappdata = f'{os.environ["appdata"]}\\pySelector'
+        self.config = configparser.ConfigParser()
+        self.logging = logging
         # noinspection PyGlobalUndefined
 
     @staticmethod
@@ -37,6 +37,31 @@ class PySelector:
         time.sleep(1)
         logging.info("Работа программы завершена")
         sys.exit()
+
+    @staticmethod
+    def enter_path():
+        logging.info("Запущен enter_path!")
+        while True:
+            logging.info("Запрашиваем путь к майну")
+            print("Не вводите ничего, чтобы использовать стандартный путь %appdata%/.minecraft")
+            inp = str(input("Введите путь к папке с игрой: "))
+            logging.info(f"Пользователь ввел {inp}")
+            inp = inp.replace('"', '')
+            if inp.replace(" ", "") == "":
+                inp = ""
+                logging.info(f"Выбран стандартный путь %appdata%/.minecraft")
+                print(f"Выбран стандартный путь %appdata%/.minecraft")
+                break
+            if not os.path.exists(inp):
+                print("Путь не существует!\n")
+                logging.info("Ooooops! Путь не существует")
+            else:
+                logging.info("Введен действительный путь")
+                print("Введен действительный путь")
+                break
+        time.sleep(1)
+        os.system("cls")
+        return str(inp)
 
     def setup_logger(self, mode=0):
         if not os.path.exists(f"{self.userappdata}\\logs"):
@@ -61,12 +86,9 @@ class PySelector:
         if not os.path.exists(f'{self.userappdata}\\config.ini'):
             logging.error("Не найден config.ini!, Запуск build_config`а")
             self.build_config()
-
-        os.chdir(self.userappdata)
-        settings = configparser.ConfigParser()
-        settings.read(f"{self.configfile_name}.ini")
-        game_directory = settings["paths"]["minecraft"].replace('"', '').replace('/', '\\')
-        program_directory = settings["paths"]["program"].replace('"', '').replace('/', '\\')
+        self.config.read(f"{self.userappdata}\\config.ini")
+        game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
+        program_directory = self.config["paths"]["program"].replace('"', '').replace('/', '\\')
         logging.info("Конфиг прочитан")
         if game_directory == "" or not os.path.exists(game_directory):
             pass
@@ -98,9 +120,8 @@ class PySelector:
             logging.error("Не удалось создать папку mods в корне игры!")
             msg.showwarning(title="Ошибка",
                             message="Не удалось создать папку mods в корне игры, похоже, указан неверный путь!"
-                                    "\nПроверьте config.ini")
-            os.system(f"notepad {self.userappdata}/config.ini")
-            logging.info("Конфиг открыт в блокноте")
+                                    f"\nПроверьте путь к папке с игрой: {self.game_directory}")
+            self.build_config()
             sys.exit()
         if not os.path.exists(f"{self.userappdata}/modpacks"):
             errs += 1
@@ -115,7 +136,6 @@ class PySelector:
             logging.info("Ошибок нет!")
         else:
             logging.warning("Были обнаружены ошибки!")
-        errs = 0
         logging.info("Чекер завершил работу")
 
     def ui(self):
@@ -140,11 +160,11 @@ class PySelector:
                 print(str(counter) + str(divider) + str(ver))
                 counter += 1
         print("*")
+        print("re - восстановление бэкапа\nq - выход")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
-        print("Чтобы восстановить бэкап напишите restore")
         logging.info("Ждем выбора модпака пользователем...")
         selector = str(input("Выберите версию: "))
-        if selector == "restore":
+        if selector == "re":
             self.restore_backup()
         if selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")
@@ -164,16 +184,13 @@ class PySelector:
 
     def build_config(self):
         logging.info('Запущен build_config')
-        file = open(f"{self.userappdata}\\config.ini", "w")
-        file.write(
-            '[paths]\n; write path to minecraft folder below (%appdata%/.minecraft if not filled)\nminecraft = \n'
-            '; do not use parameter below, if do not know, what are you doing!!!!\nprogram = ')
-        file.close()
+        logging.info("Начато создание config файла")
+        with open(f"{self.userappdata}\\config.ini", "w") as f:
+            f.write(f"[paths]\n; write path to minecraft folder below (%appdata%/.minecraft if not filled)\n"
+                    f"game_path = {self.enter_path()}\n; do not use parameter below, if do not know, "
+                    f"what are you doing\nprogram = \n")
+            f.close()
         logging.info('Конфиг создан успешно')
-        msg.showinfo(title="Привет!",
-                     message='Ты запустил эту программу в первый раз, и ее надо настроить. Проверь config.ini!')
-        logging.info('Конфиг открыт в блокноте')
-        os.system(f"notepad {self.userappdata}/config.ini")
 
     def devmode(self):
         self.setup_logger(mode=1)
@@ -183,7 +200,7 @@ class PySelector:
             if devm == "0":
                 self.finish()
             if devm == "1":
-                logging.warning("Запущено принудительное восстановление конфига")
+                logging.warning("Запущено принудительное пересоздание конфига")
                 self.build_config()
             if devm == "2":
                 self.read_config()
@@ -279,62 +296,15 @@ class PySelector:
         self.finish()
 
     def run(self):
-        while True:
-            try:
-                self.setup_logger()
-                logging.info(f'Версия программы: {self.version}')
-                if not os.path.exists(f"{self.userappdata}\\config.ini"):
-                    self.build_config()
-                else:
-                    pass
-                os.chdir(self.userappdata)
-                self.read_config()
-                self.build_list()
-                self.checker()
-                logging.info(f'Путь к программе: {self.program_directory}')
-                logging.info(f'Путь к игре: {self.game_directory}')
-                logging.info(f'Путь к папке с пользовательскими данными: {self.userappdata}')
-                if os.path.exists(f"{self.game_directory}\\tempfiles\\"):
-                    shutil.rmtree(f"{self.game_directory}\\tempfiles")
-                else:
-                    pass
-                self.ui()
-            except IndexError as err:
-                logging.error("IndexError")
-                logging.exception(err)
-                print("неверное значение\nперезапуск")
-                self.error()
-            except PermissionError as err:
-                logging.error("PermissionError")
-                logging.exception(err)
-                msg.showerror(title="Ошибка доступа", message="Не удается получить доступ к какому-то файлу."
-                                                              "\nПопробуйте произвести запуск от имени администратора!")
-                exit()
-            except OverflowError as err:
-                logging.error("OverflowError")
-                logging.exception(err)
-                print("многацифер\nперезапуск")
-                self.error()
-            except ZeroSelector as err:
-                logging.error("ZeroSelector")
-                logging.exception(err)
-                print("неверное значение\nперезапуск")
-                self.error()
-            except ValueError as err:
-                logging.error("ValueError")
-                logging.exception(err)
-                print("неверное значение\nперезапуск")
-                self.error()
-            except FileNotFoundError as err:
-                logging.error("FileNotFoundError")
-                logging.exception(err)
-                logging.error("FileNotFoundError, запуск чекера")
-                self.checker()
-                self.finish()
-            except Exception as err:
-                os.system("cls")
-                logging.error("Неизвестная ошибка!!")
-                print("неизвестная ошибка, смотри логи")
-                logging.exception(err)
-                time.sleep(7)
-                break
+        self.setup_logger()
+        if not os.path.exists(f"{self.userappdata}\\config.ini"):
+            self.build_config()
+        else:
+            pass
+        os.chdir(self.userappdata)
+        self.build_list()
+        if os.path.exists(f"{self.game_directory}\\tempfiles\\"):
+            shutil.rmtree(f"{self.game_directory}\\tempfiles")
+        else:
+            pass
+        self.ui()
