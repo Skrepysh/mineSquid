@@ -13,7 +13,11 @@ class ZeroSelector(Exception):
     pass
 
 
-class PySelector:
+class Restart(Exception):
+    pass
+
+
+class MineSquid:
     def __init__(self, version):
         self.dt = dt.datetime.now()
         self.user_choice = "ОШИБКА"
@@ -21,7 +25,7 @@ class PySelector:
         self.version = str(version)
         self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
         self.program_directory = os.getcwd()
-        self.userappdata = f'{os.environ["appdata"]}\\pySelector'
+        self.userappdata = f'{os.environ["appdata"]}\\mineSquid'
         self.config = configparser.ConfigParser()
         self.logging = logging
         # noinspection PyGlobalUndefined
@@ -70,7 +74,7 @@ class PySelector:
             logging.basicConfig(level=logging.DEBUG,
                                 filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
                                          f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
-                                         f"{self.dt.year}.log", filemode="w",
+                                         f"{self.dt.year}.log", filemode="w+",
                                 format="%(asctime)s #%(levelname)s: %(message)s")
         else:
             logging.basicConfig(level=logging.DEBUG,
@@ -83,9 +87,11 @@ class PySelector:
             os.mkdir(self.userappdata)
             logging.info("Папка создана")
             self.build_config()
+            raise Restart
         if not os.path.exists(f'{self.userappdata}\\config.ini'):
             logging.error("Не найден config.ini!, Запуск build_config`а")
             self.build_config()
+            raise Restart
         self.config.read(f"{self.userappdata}\\config.ini")
         game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
         program_directory = self.config["paths"]["program"].replace('"', '').replace('/', '\\')
@@ -160,12 +166,18 @@ class PySelector:
                 print(str(counter) + str(divider) + str(ver))
                 counter += 1
         print("*")
-        print("re - восстановление бэкапа\nq - выход")
+        print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\nq - выход")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
         logging.info("Ждем выбора модпака пользователем...")
         selector = str(input("Выберите версию: "))
         if selector == "re":
             self.restore_backup()
+        if selector == "set":
+            os.system("cls")
+            print("Пересоздание конфига...")
+            logging.info("Введена команда set, пересоздание конфига...")
+            self.build_config()
+            raise Restart
         if selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")
             self.finish()
@@ -247,7 +259,7 @@ class PySelector:
                 confirm4 = input("?>")
                 if confirm4 == "yes":
                     os.chdir(os.environ["appdata"])
-                    shutil.rmtree("pySelector")
+                    shutil.rmtree("mineSquid")
                     logging.info("Папка с данными пользователя удалена!")
                 else:
                     pass
@@ -299,6 +311,7 @@ class PySelector:
         self.setup_logger()
         if not os.path.exists(f"{self.userappdata}\\config.ini"):
             self.build_config()
+            raise Restart
         else:
             pass
         os.chdir(self.userappdata)

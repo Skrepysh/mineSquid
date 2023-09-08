@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-from pyselector import PySelector, ZeroSelector
+from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
 parser = argparse.ArgumentParser(description='Привет от разработчика!')
 parser.add_argument("--devmode", default=0, help="Режим разработчика. НЕ ЛЕЗЬТЕ ТУДА!!!")
@@ -12,8 +12,8 @@ parser.add_argument("--mp", default=0, help="используйте --mp [ном
 parser.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.11"
-ok = PySelector(program_version)
+program_version = "2.12"
+ok = MineSquid(program_version)
 args.mp = int(args.mp)
 args.restore = str(args.restore)
 args.devmode = str(args.devmode)
@@ -47,7 +47,6 @@ while True:
         msg.showerror(title="Ошибка конфиг-файла", message="Похоже, config.ini поврежден, "
                                                            "он будет пересоздан")
         ok.build_config()
-        ok.finish()
     except IndexError as err:
         logging.error("IndexError")
         logging.exception(err)
@@ -82,6 +81,11 @@ while True:
         logging.error("FileNotFoundError, запуск чекера")
         ok.checker()
         ok.finish()
+    except Restart:
+        print("Перезапуск...")
+        logging.info("Программа перезапускается...")
+        os.system("cls")
+        pass
     except Exception as err:
         os.system("cls")
         logging.error("Неизвестная ошибка!!")
