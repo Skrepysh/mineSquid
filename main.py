@@ -12,7 +12,7 @@ parser.add_argument("--mp", default=0, help="используйте --mp [ном
 parser.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.12"
+program_version = "2.13"
 ok = MineSquid(program_version)
 args.mp = int(args.mp)
 args.restore = str(args.restore)

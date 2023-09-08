@@ -20,10 +20,10 @@ class Restart(Exception):
 class MineSquid:
     def __init__(self, version):
         self.dt = dt.datetime.now()
-        self.user_choice = "ОШИБКА"
+        self.user_choice = ""
         self.list = []
         self.version = str(version)
-        self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
+        self.game_directory = ''
         self.program_directory = os.getcwd()
         self.userappdata = f'{os.environ["appdata"]}\\mineSquid'
         self.config = configparser.ConfigParser()
@@ -46,7 +46,7 @@ class MineSquid:
     def enter_path():
         logging.info("Запущен enter_path!")
         while True:
-            logging.info("Запрашиваем путь к майну")
+            logging.info("Запрашиваем путь к папке с игрой")
             print("Не вводите ничего, чтобы использовать стандартный путь %appdata%/.minecraft")
             inp = str(input("Введите путь к папке с игрой: "))
             logging.info(f"Пользователь ввел {inp}")
@@ -94,16 +94,11 @@ class MineSquid:
             raise Restart
         self.config.read(f"{self.userappdata}\\config.ini")
         game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
-        program_directory = self.config["paths"]["program"].replace('"', '').replace('/', '\\')
         logging.info("Конфиг прочитан")
         if game_directory == "" or not os.path.exists(game_directory):
-            pass
+            self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
         else:
             self.game_directory = game_directory
-        if program_directory == "" or not os.path.exists(program_directory):
-            pass
-        else:
-            self.program_directory = program_directory
         logging.info("Конфиг обработан")
 
     def checker(self):
@@ -149,10 +144,10 @@ class MineSquid:
         os.chdir(self.game_directory)
         print("Привет!")
         print("Версия программы: " + self.version)
+        print(f'Путь к папке с игрой: {self.game_directory}')
         print("Список модпаков:  ")
         print("*")
         counter = 1
-        divider = ". "
         if len(self.list) == 0:
             print("Папка модпаков пуста\n*")
             logging.warning('Папка модпаков пуста')
@@ -162,8 +157,8 @@ class MineSquid:
         else:
             logging.info("Список модпаков: ")
             for ver in self.list:
-                logging.info(str(counter) + str(divider) + str(ver))
-                print(str(counter) + str(divider) + str(ver))
+                logging.info(str(counter) + ". " + str(ver))
+                print(str(counter) + ". " + str(ver))
                 counter += 1
         print("*")
         print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\nq - выход")
@@ -199,8 +194,7 @@ class MineSquid:
         logging.info("Начато создание config файла")
         with open(f"{self.userappdata}\\config.ini", "w") as f:
             f.write(f"[paths]\n; write path to minecraft folder below (%appdata%/.minecraft if not filled)\n"
-                    f"game_path = {self.enter_path()}\n; do not use parameter below, if do not know, "
-                    f"what are you doing\nprogram = \n")
+                    f"game_path = {self.enter_path()}\n")
             f.close()
         logging.info('Конфиг создан успешно')
 
