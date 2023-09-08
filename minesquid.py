@@ -129,10 +129,6 @@ class MineSquid:
             logging.warning("Отсутствует хранилище модпаков:-(")
             os.mkdir(f"{self.userappdata}/modpacks")
             logging.info("Хранилище создано")
-            readme = open(f"{self.userappdata}/modpacks/readME PLS.txt", "w")
-            readme.write("put your modpacks in this folder")
-            readme.close()
-            logging.info("Readme создан")
         if errs == 0:
             logging.info("Ошибок нет!")
         else:
@@ -161,7 +157,7 @@ class MineSquid:
                 print(str(counter) + ". " + str(ver))
                 counter += 1
         print("*")
-        print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\nq - выход")
+        print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\n? - открыть readME\nq - выход")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
         logging.info("Ждем выбора модпака пользователем...")
         selector = str(input("Выберите версию: "))
@@ -172,6 +168,9 @@ class MineSquid:
             print("Пересоздание конфига...")
             logging.info("Введена команда set, пересоздание конфига...")
             self.build_config()
+            raise Restart
+        if selector == "?":
+            os.system(f"notepad {self.program_directory}\\readME.txt")
             raise Restart
         if selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")

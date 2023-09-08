@@ -13,8 +13,7 @@ if os.path.exists(f"{path}\\pySelector") and len(os.listdir(f"{path}\\mineSquid\
     print("Программа была обновлена\nВыполняется перенос данных в новую папку\n"
           "Ждите...")
     shutil.rmtree(f"{path}\\mineSquid")
-    shutil.copytree(f"{path}\\pySelector", f"{path}\\mineSquid")  # копируем старые данные в новую папку
-    shutil.rmtree(f"{path}\\pySelector")  # удаляем старую папку
+    shutil.move(f"{path}\\pySelector", f"{path}\\mineSquid")  # перемещаем старые данные в новую папку
     print("Перенос данных завершен")
     time.sleep(2)
 else:
