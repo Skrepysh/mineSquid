@@ -42,22 +42,28 @@ class MineSquid:
         logging.info("Работа программы завершена")
         sys.exit()
 
-    @staticmethod
-    def enter_path():
+    def enter_path(self):
         logging.info("Запущен enter_path!")
         while True:
             logging.info("Запрашиваем путь к папке с игрой")
-            print("Не вводите ничего, чтобы использовать стандартный путь %appdata%/.minecraft")
+            print("Не вводите ничего, чтобы использовать стандартный путь %appdata%/.minecraft\nc - отмена")
             inp = str(input("Введите путь к папке с игрой: "))
             logging.info(f"Пользователь ввел {inp}")
             inp = inp.replace('"', '')
             if inp.replace(" ", "") == "":
-                inp = ""
-                logging.info(f"Выбран стандартный путь %appdata%/.minecraft")
-                print(f"Выбран стандартный путь %appdata%/.minecraft")
+                if os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
+                    inp = ""
+                    logging.info("Выбран стандартный путь %appdata%/.minecraft")
+                    print("Выбран стандартный путь %appdata%/.minecraft")
+                    break
+                else:
+                    print("Ooooops! Стандартный путь не существует, выберите другой!\n*******")
+            elif inp.lower() == "c":
+                print("Редактирование отменено")
+                inp = self.game_directory
                 break
-            if not os.path.exists(inp):
-                print("Путь не существует!\n")
+            elif not os.path.exists(inp):
+                print("Путь не существует!\n*******")
                 logging.info("Ooooops! Путь не существует")
             else:
                 logging.info("Введен действительный путь")
@@ -86,11 +92,11 @@ class MineSquid:
             logging.info("Нету папки с данными пользователя")
             os.mkdir(self.userappdata)
             logging.info("Папка создана")
-            self.build_config()
+            self.repair_config()
             raise Restart
         if not os.path.exists(f'{self.userappdata}\\config.ini'):
             logging.error("Не найден config.ini!, Запуск build_config`а")
-            self.build_config()
+            self.repair_config()
             raise Restart
         self.config.read(f"{self.userappdata}\\config.ini")
         game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
@@ -122,8 +128,8 @@ class MineSquid:
             msg.showwarning(title="Ошибка",
                             message="Не удалось создать папку mods в корне игры, похоже, указан неверный путь!"
                                     f"\nПроверьте путь к папке с игрой: {self.game_directory}")
-            self.build_config()
-            sys.exit()
+            self.edit_config()
+            raise Restart
         if not os.path.exists(f"{self.userappdata}/modpacks"):
             errs += 1
             logging.warning("Отсутствует хранилище модпаков:-(")
@@ -165,9 +171,9 @@ class MineSquid:
             self.restore_backup()
         if selector == "set":
             os.system("cls")
-            print("Пересоздание конфига...")
-            logging.info("Введена команда set, пересоздание конфига...")
-            self.build_config()
+            print("Редактирование конфига...")
+            logging.info("Введена команда set, начат процесс изменения пути к папке с игрой...")
+            self.edit_config()
             raise Restart
         if selector == "?":
             os.system(f"notepad {self.program_directory}\\readME.txt")
@@ -188,74 +194,26 @@ class MineSquid:
         self.list = [e for e in os.listdir() if os.path.isdir(e)]
         logging.info("Составлен список модпаков")
 
-    def build_config(self):
-        logging.info('Запущен build_config')
-        logging.info("Начато создание config файла")
+    def edit_config(self):
+        logging.info('Запущен edit_config')
+        logging.info("Начато редактирование config файла")
+        self.config.set("paths", "game_path", self.enter_path())
         with open(f"{self.userappdata}\\config.ini", "w") as f:
-            f.write(f"[paths]\n; write path to minecraft folder below (%appdata%/.minecraft if not filled)\n"
-                    f"game_path = {self.enter_path()}\n")
-            f.close()
+            self.config.write(f)
         logging.info('Конфиг создан успешно')
 
-    def devmode(self):
-        self.setup_logger(mode=1)
-        logging.info("Запущен devmode!!")
-        while True:
-            devm = str(input(">>>"))
-            if devm == "0":
-                self.finish()
-            if devm == "1":
-                logging.warning("Запущено принудительное пересоздание конфига")
-                self.build_config()
-            if devm == "2":
-                self.read_config()
-                print(f'Путь к программе: {self.program_directory}')
-                print(f'Путь к игре: {self.game_directory}')
-                print(f'Путь к папке с пользовательскими данными: {self.userappdata}')
-                input("<<<")
-            if devm == "3":
-                logging.warning("Принудительный запуск чекера!")
-                self.read_config()
-                self.checker()
-            if devm == "4":
-                confirm1 = input("?>")
-                if confirm1 == "yes":
-                    shutil.rmtree(f"{self.userappdata}\\logs")
-                    shutil.rmtree(f"{self.userappdata}\\backup")
-                    os.mkdir(f"{self.userappdata}\\logs")
-                    os.mkdir(f"{self.userappdata}\\backup")
-                    logging.warning("Выполнена принудительная очистка папок с логами и бэкапом!!!")
-                else:
-                    pass
-            if devm == "5":
-                confirm2 = input("?>")
-                if confirm2 == "yes":
-                    shutil.rmtree(f"{self.userappdata}\\modpacks")
-                    os.mkdir(f"{self.userappdata}\\modpacks")
-                    logging.warning("Выполнена принудительная очистка папки с модпаками!!!")
-                else:
-                    pass
-            if devm == "6":
-                confirm3 = input("?>")
-                if confirm3 == "1":
-                    shutil.rmtree(f"{self.userappdata}\\modpacks")
-                    logging.warning("Папка модпаков удалена!")
-                if confirm3 == "2":
-                    shutil.rmtree(f"{self.userappdata}\\backup")
-                    logging.warning("Папка с бэкапом удалена!")
-                if confirm3 == "3":
-                    shutil.rmtree(f"{self.userappdata}\\logs")
-                    logging.warning("Папка с логами удалена!")
-                else:
-                    pass
-            if devm == "7":
-                confirm4 = input("?>")
-                if confirm4 == "yes":
-                    os.chdir(os.environ["appdata"])
-                    shutil.rmtree("mineSquid")
-                    logging.info("Папка с данными пользователя удалена!")
-                else:
-                    pass
+    def repair_config(self):
+        msg.showerror(title="Ошибка конфиг-файла", message="Похоже, config.ini поврежден, "
+                                                           "он будет пересоздан")
+        if os.path.exists(f"{self.userappdata}\\config.ini"):
+            os.remove(f"{self.userappdata}\\config.ini")
+        else:
+            pass
+        with open(f"{self.userappdata}\\config.ini", "w") as cfg:
+            self.config.add_section("paths")
+            self.config.set("paths", "game_path", "")
+            self.config.write(cfg)
+        self.edit_config()
 
     def load_modpack(self, modpack_number, mode="0"):
         if modpack_number > len(self.list) - 1 and mode == "1":
@@ -303,7 +261,7 @@ class MineSquid:
     def run(self):
         self.setup_logger()
         if not os.path.exists(f"{self.userappdata}\\config.ini"):
-            self.build_config()
+            self.repair_config()
             raise Restart
         else:
             pass

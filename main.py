@@ -4,7 +4,6 @@ import argparse
 from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
 parser = argparse.ArgumentParser(description='Привет от разработчика!')
-parser.add_argument("--devmode", default=0, help="Режим разработчика. НЕ ЛЕЗЬТЕ ТУДА!!!")
 parser.add_argument("--mp", default=0, help="используйте --mp [номер модпака] для создания ярлыков быстрого "
                                             "доступа к определенным модпакам "
                                             "например /.../.../pyselector.exe --mp 3   <--- для создания ярлыка,"
@@ -12,41 +11,35 @@ parser.add_argument("--mp", default=0, help="используйте --mp [ном
 parser.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.13"
+program_version = "2.15"
 ok = MineSquid(program_version)
 args.mp = int(args.mp)
 args.restore = str(args.restore)
-args.devmode = str(args.devmode)
 logging = ok.logging
 
 while True:
     try:
-        if args.devmode == "1":
-            ok.devmode()
-        else:
+        ok.setup_logger()
+        logging.info(f'Версия программы: {program_version}')
+        ok.read_config()
+        ok.checker()
+        logging.info(f'Путь к программе: {ok.program_directory}')
+        logging.info(f'Путь к игре: {ok.game_directory}')
+        logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
+        if args.mp != 0 and args.mp > 0:
             ok.setup_logger()
-            logging.info(f'Версия программы: {program_version}')
-            ok.read_config()
-            ok.checker()
-            logging.info(f'Путь к программе: {ok.program_directory}')
-            logging.info(f'Путь к игре: {ok.game_directory}')
-            logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
-            if args.mp != 0 and args.mp > 0:
+            ok.build_list()
+            ok.load_modpack(modpack_number=(args.mp - 1), mode="1")
+        else:
+            if args.restore != "0":
                 ok.setup_logger()
-                ok.build_list()
-                ok.load_modpack(modpack_number=(args.mp - 1), mode="1")
+                ok.restore_backup()
             else:
-                if args.restore != "0":
-                    ok.setup_logger()
-                    ok.restore_backup()
-                else:
-                    ok.run()
+                ok.run()
     except KeyError as err:
         logging.error("KeyError")
         logging.exception(err)
-        msg.showerror(title="Ошибка конфиг-файла", message="Похоже, config.ini поврежден, "
-                                                           "он будет пересоздан")
-        ok.build_config()
+        ok.repair_config()
     except IndexError as err:
         logging.error("IndexError")
         logging.exception(err)
