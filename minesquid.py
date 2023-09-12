@@ -203,8 +203,6 @@ class MineSquid:
         logging.info('Конфиг создан успешно')
 
     def repair_config(self):
-        msg.showerror(title="Ошибка конфиг-файла", message="Похоже, config.ini поврежден, "
-                                                           "он будет пересоздан")
         if os.path.exists(f"{self.userappdata}\\config.ini"):
             os.remove(f"{self.userappdata}\\config.ini")
         else:
