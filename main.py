@@ -6,12 +6,12 @@ from tkinter import messagebox as msg
 parser = argparse.ArgumentParser(description='Привет от разработчика!')
 parser.add_argument("--mp", default=0, help="используйте --mp [номер модпака] для создания ярлыков быстрого "
                                             "доступа к определенным модпакам "
-                                            "например /.../.../pyselector.exe --mp 3   <--- для создания ярлыка,"
+                                            "например /.../.../mineSquid.exe --mp 3   <--- для создания ярлыка,"
                                             "активирующего модпак 3")
 parser.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.15.1"
+program_version = "2.16"
 ok = MineSquid(program_version)
 args.mp = int(args.mp)
 args.restore = str(args.restore)
@@ -23,16 +23,14 @@ while True:
         logging.info(f'Версия программы: {program_version}')
         ok.read_config()
         ok.checker()
-        logging.info(f'Путь к программе: {ok.program_directory}')
+        logging.info(f'Путь к программе: {os.getcwd()}')
         logging.info(f'Путь к игре: {ok.game_directory}')
         logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
         if args.mp != 0 and args.mp > 0:
-            ok.setup_logger()
             ok.build_list()
             ok.load_modpack(modpack_number=(args.mp - 1), mode="1")
         else:
             if args.restore != "0":
-                ok.setup_logger()
                 ok.restore_backup()
             else:
                 ok.run()
@@ -58,9 +56,8 @@ while True:
         logging.exception(err)
         print("многацифер\nперезапуск")
         ok.error()
-    except ZeroSelector as err:
+    except ZeroSelector:
         logging.error("ZeroSelector")
-        logging.exception(err)
         print("неверное значение\nперезапуск")
         ok.error()
     except ValueError as err:
