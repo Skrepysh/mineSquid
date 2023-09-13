@@ -3,7 +3,7 @@ import time
 import argparse
 from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
-parser = argparse.ArgumentParser(description='Привет от разработчика!')
+parser = argparse.ArgumentParser(description='Привет!')
 parser.add_argument("--mp", default=0, help="используйте --mp [номер модпака] для создания ярлыков быстрого "
                                             "доступа к определенным модпакам "
                                             "например /.../.../mineSquid.exe --mp 3   <--- для создания ярлыка,"
@@ -51,11 +51,6 @@ while True:
                                                       "\nИли попробуйте запустить программу "
                                                       "от имени администратора")
         exit()
-    except OverflowError as err:
-        logging.error("OverflowError")
-        logging.exception(err)
-        print("многацифер\nперезапуск")
-        ok.error()
     except ZeroSelector:
         logging.error("ZeroSelector")
         print("неверное значение\nперезапуск")
@@ -79,7 +74,7 @@ while True:
     except Exception as err:
         os.system("cls")
         logging.error("Неизвестная ошибка!!")
-        print("неизвестная ошибка, смотри логи")
+        print("Неизвестная ошибка, смотри логи")
         logging.exception(err)
         time.sleep(7)
         break
