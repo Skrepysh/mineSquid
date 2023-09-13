@@ -52,7 +52,7 @@ class MineSquid:
             inp = inp.replace('"', '')
             if inp.replace(" ", "") == "":
                 if os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
-                    inp = ""
+                    inp = "default"
                     logging.info("Выбран стандартный путь %appdata%/.minecraft")
                     print("Выбран стандартный путь %appdata%/.minecraft")
                     break
@@ -101,7 +101,7 @@ class MineSquid:
         self.config.read(f"{self.userappdata}\\config.ini")
         game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
         logging.info("Конфиг прочитан")
-        if game_directory == "" and os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
+        if game_directory == "default" and os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
             self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
         elif os.path.exists(game_directory):
             self.game_directory = game_directory
@@ -145,11 +145,10 @@ class MineSquid:
         print("*")
         counter = 1
         if len(self.list) == 0:
-            print("Папка модпаков пуста\n*")
+            print("Папка модпаков пуста")
             logging.warning('Папка модпаков пуста')
             os.system(f"explorer {self.userappdata}\\modpacks\\")
             logging.info('Открыта папка модпаков в проводнике')
-            self.finish()
         else:
             logging.info("Список модпаков: ")
             for ver in self.list:
@@ -206,7 +205,7 @@ class MineSquid:
             pass
         with open(f"{self.userappdata}\\config.ini", "w") as cfg:
             self.config.add_section("paths")
-            self.config.set("paths", "game_path", "")
+            self.config.set("paths", "game_path", "default")
             self.config.write(cfg)
         self.edit_config()
 
@@ -220,21 +219,21 @@ class MineSquid:
             print("Выбрана версия " + self.user_choice)
             print("работаю..")
             logging.info("Начата работа над модпаком...")
-            pb5 = Bar("Выполнение", max=4)
+            pb1 = Bar("Выполнение", max=4, fill='@')
             shutil.rmtree(f"{self.userappdata}\\backup")
             logging.info("Удален текущий бэкап")
-            pb5.next()
+            pb1.next()
             shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
             logging.info("Сделан бэкап текущих модов")
-            pb5.next()
+            pb1.next()
             shutil.rmtree(f"{self.game_directory}\\mods")
             logging.info("Папка mods удалена")
-            pb5.next()
+            pb1.next()
             shutil.copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
             logging.info("Модпак скопирован в папку mods")
             logging.info("ГОТОВО!")
-            pb5.next()
-            pb5.finish()
+            pb1.next()
+            pb1.finish()
             print("готово")
             self.finish()
         else:
@@ -246,26 +245,26 @@ class MineSquid:
         if self.game_directory != 'не назначена':
             bob = False
             logging.info("Пользователь запустил восстановление бэкапа")
-            pb4 = Bar("Восстановление", max=3)
+            pb2 = Bar("Восстановление", max=3, fill='@')
             if os.path.exists(f"{self.game_directory}\\mods"):
-                pb4.next()
+                pb2.next()
                 bob = True
                 shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
                 logging.info("Бэкап сделан перед восстановлением бэкапа)")
                 shutil.rmtree(f"{self.game_directory}\\mods")
                 logging.info("Папка mods удалена")
             else:
-                pb4.next()
+                pb2.next()
             shutil.copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
-            pb4.next()
+            pb2.next()
             if bob:
                 shutil.rmtree(f"{self.userappdata}\\backup")
                 os.rename(f"{self.userappdata}\\bob", f"{self.userappdata}\\backup")
             else:
                 pass
             logging.info("Бэкап восстановлен")
-            pb4.next()
-            pb4.finish()
+            pb2.next()
+            pb2.finish()
             print("Бэкап восстановлен")
             self.finish()
         else:
