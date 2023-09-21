@@ -32,13 +32,13 @@ class MineSquid:
 
     @staticmethod
     def error():
-        time.sleep(1.5)
+        time.sleep(1)
         os.system("cls")
 
     @staticmethod
     def finish():
         print("завершение работы...")
-        time.sleep(1)
+        time.sleep(0.5)
         logging.info("Работа программы завершена")
         sys.exit()
 
@@ -81,7 +81,7 @@ class MineSquid:
                                 filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
                                          f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
                                          f"{self.dt.year}.log", filemode="w+",
-                                format="%(asctime)s #%(levelname)s: %(message)s")
+                                format="%(asctime)s #%(levelname)s, %(funcName)s(): %(message)s")
         else:
             logging.basicConfig(level=logging.DEBUG,
                                 format="%(asctime)s #%(levelname)s: %(message)s")
@@ -134,6 +134,12 @@ class MineSquid:
             logging.warning("Отсутствует хранилище модпаков:-(")
             os.mkdir(f"{self.userappdata}/modpacks")
             logging.info("Хранилище создано")
+        if not os.path.exists(f"{self.userappdata}\\config.ini"):
+            logging.warning("Конфиг отсутствует!")
+            self.repair_config()
+            raise Restart
+        else:
+            pass
         logging.info("Чекер завершил работу")
 
     def ui(self):
@@ -209,12 +215,8 @@ class MineSquid:
             self.config.write(cfg)
         self.edit_config()
 
-    def load_modpack(self, modpack_number, mode="0"):
+    def load_modpack(self, modpack_number, silent=True):
         if self.game_directory != 'не назначена':
-            if modpack_number > len(self.list) - 1 and mode == "1":
-                self.run()
-            else:
-                pass
             self.user_choice = self.list[modpack_number]
             print("Выбрана версия " + self.user_choice)
             print("работаю..")
@@ -273,13 +275,7 @@ class MineSquid:
             raise Restart
 
     def run(self):
-        if not os.path.exists(f"{self.userappdata}\\config.ini"):
-            self.repair_config()
-            raise Restart
-        else:
-            pass
         os.chdir(self.userappdata)
-        self.build_list()
         if os.path.exists(f"{self.game_directory}\\tempfiles\\") and self.game_directory != 'не назначена':
             shutil.rmtree(f"{self.game_directory}\\tempfiles")
         else:
