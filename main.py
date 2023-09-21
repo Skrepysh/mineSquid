@@ -3,18 +3,24 @@ import time
 import argparse
 from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
+
 parser = argparse.ArgumentParser(description='Привет!')
-parser.add_argument("--mp", default=0, help="используйте --mp [номер модпака] для создания ярлыков быстрого "
-                                            "доступа к определенным модпакам "
-                                            "например /.../.../mineSquid.exe --mp 3   <--- для создания ярлыка,"
-                                            "активирующего модпак 3")
-parser.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
+group1 = parser.add_mutually_exclusive_group()
+group1.add_argument("--mpname", default=0, help="используйте --mpname [имя модпака] для создания ярлыков быстрого "
+                                                "доступа к определенным модпакам ПО ИМЕНИ"
+                                                "например /.../.../mineSquid.exe --mpname '1.20.1 survival'  <--- для "
+                                                "создания ярлыка,"
+                                                "активирующего модпак c именем '1.20.1 survival'")
+group1.add_argument("--mpnum", default=0, help="используйте --mpnum [номер модпака] для создания ярлыков быстрого "
+                                               "доступа к определенным модпакам ПО НОМЕРУ"
+                                               "например /.../.../mineSquid.exe --mpnum 3  <--- для "
+                                               "создания ярлыка,"
+                                               "активирующего модпак с номером 3")
+group1.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.16"
+program_version = "2.18"
 ok = MineSquid(program_version)
-args.mp = int(args.mp)
-args.restore = str(args.restore)
 logging = ok.logging
 
 while True:
@@ -23,14 +29,16 @@ while True:
         logging.info(f'Версия программы: {program_version}')
         ok.read_config()
         ok.checker()
+        ok.build_list()
         logging.info(f'Путь к программе: {os.getcwd()}')
         logging.info(f'Путь к игре: {ok.game_directory}')
         logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
-        if args.mp != 0 and args.mp > 0:
-            ok.build_list()
-            ok.load_modpack(modpack_number=(args.mp - 1), mode="1")
+        if (int(args.mpnum) != 0 and int(args.mpnum) > 0) and int(args.mpnum) < len(ok.list) - 1:
+            ok.load_modpack(modpack_number=(int(args.mpnum) - 1), silent=True)
+        elif str(args.mpname) in ok.list:
+            ok.load_modpack(modpack_number=ok.list.index(args.mpname), silent=True)
         else:
-            if args.restore != "0":
+            if args.restore != 0:
                 ok.restore_backup()
             else:
                 ok.run()
