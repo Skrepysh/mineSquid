@@ -7,6 +7,8 @@ import time
 from progress.bar import Bar
 import datetime as dt
 from tkinter import messagebox as msg
+import requests
+import subprocess
 
 
 class ZeroSelector(Exception):
@@ -24,7 +26,7 @@ class MineSquid:
         self.list = []
         self.version = str(version)
         self.game_directory = 'не назначена'
-        self.program_directory = os.getcwd()
+        self.program_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
         self.userappdata = f'{os.environ["appdata"]}\\mineSquid'
         self.config = configparser.ConfigParser()
         self.logging = logging
@@ -162,7 +164,8 @@ class MineSquid:
                 print(str(counter) + ". " + str(ver))
                 counter += 1
         print("*")
-        print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\n? - открыть readME\nq - выход")
+        print("re - восстановление бэкапа\nset - изменить путь к папке с игрой\nupd - обновление программы"
+              "\n? - открыть readME\nq - выход")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
         logging.info("Ждем выбора модпака пользователем...")
         selector = str(input("Выберите модпак: "))
@@ -174,8 +177,11 @@ class MineSquid:
             logging.info("Введена команда set, начат процесс изменения пути к папке с игрой...")
             self.edit_config()
             raise Restart
+        elif selector == "upd":
+            self.update()
+            sys.exit()
         elif selector == "?":
-            os.system(f"notepad {self.program_directory}\\readME.txt")
+            subprocess.Popen(f"notepad {self.program_directory}\\readME.txt")
             raise Restart
         elif selector == "q" or selector == "quit":
             logging.info("Пользователь ввел команду q!")
@@ -215,7 +221,7 @@ class MineSquid:
             self.config.write(cfg)
         self.edit_config()
 
-    def load_modpack(self, modpack_number, silent=True):
+    def load_modpack(self, modpack_number):
         if self.game_directory != 'не назначена':
             self.user_choice = self.list[modpack_number]
             print("Выбрана версия " + self.user_choice)
@@ -272,6 +278,51 @@ class MineSquid:
         else:
             print("Папка с игрой не указана!")
             time.sleep(1.5)
+            raise Restart
+
+    def update(self):
+        logging.info("Начата проверка обновлений...")
+        print("Проверка обновлений...")
+        try:
+            version_url = "https://raw.githubusercontent.com/Skrepysh/mineSquid/main/version.txt"
+            version = requests.get(version_url).text.replace('\n', '')
+        except Exception:
+            print("Не удалось проверить обновления(((\nПроверьте подключение к интернету")
+            time.sleep(1.5)
+            raise Restart
+        if float(version) > float(self.version):
+            print(f"Найдена новая версия программы: {version}")
+            logging.info(f"Найдена новая версия программы: {version}!")
+            accept = input("Выполнить обновление? Y - да, N - нет: ")
+            if accept.lower() == "y":
+                logging.info("Обновление подтверждено")
+                print("Скачиваю обновление...")
+                try:
+                    logging.info("Скачивание...")
+                    update_url = (f"https://github.com/Skrepysh/mineSquid/releases/download/v{version}"
+                                  f"/mineSquid_v{version}_setup.exe")
+                    os.chdir(os.environ['temp'])
+                    open("mineSquidUpdate.exe", "wb").write(requests.get(update_url, allow_redirects=True).content)
+                except Exception:
+                    print("Не удалось скачать обновление(((\nПроверьте подключение к интернету")
+                    time.sleep(1.5)
+                    raise Restart
+                print("Запускаю процесс установки...")
+                logging.info("Запускаю процесс установки...")
+                if os.path.exists(f'{os.environ["temp"]}\\mineSquidUpdate.exe'):
+                    subprocess.Popen(f'{os.environ["temp"]}\\mineSquidUpdate.exe /Silent')
+                else:
+                    print("При обновлении произошла ошибка!")
+                sys.exit()
+            else:
+                logging.info("Обновление отменено")
+                print("Обновление отменено")
+                time.sleep(1)
+                raise Restart
+        else:
+            logging.info("Обновлений нет")
+            print("Обновлений нет")
+            time.sleep(1)
             raise Restart
 
     def run(self):
