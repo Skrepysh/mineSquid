@@ -1,14 +1,16 @@
-import configparser
+import time
+from configparser import ConfigParser
 import logging
 import os
-import sys
-import shutil
-import time
+from sys import exit, argv
+from shutil import rmtree, copytree
+from time import sleep
 from progress.bar import Bar
-import datetime as dt
+from datetime import datetime
 from tkinter import messagebox as msg
+from tkinter import filedialog
 import requests
-import subprocess
+from subprocess import Popen
 
 
 class ZeroSelector(Exception):
@@ -21,72 +23,47 @@ class Restart(Exception):
 
 class MineSquid:
     def __init__(self, version):
-        self.dt = dt.datetime.now()
+        self.dt = datetime.now()
         self.user_choice = ""
         self.list = []
         self.version = str(version)
         self.game_directory = 'не назначена'
-        self.program_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
+        self.program_directory = os.path.dirname(os.path.abspath(argv[0]))
         self.userappdata = f'{os.environ["appdata"]}\\mineSquid'
-        self.config = configparser.ConfigParser()
+        self.config = ConfigParser()
         self.logging = logging
         # noinspection PyGlobalUndefined
 
     @staticmethod
     def error():
-        time.sleep(1)
+        sleep(0.5)
         os.system("cls")
 
     @staticmethod
     def finish():
         print("завершение работы...")
-        time.sleep(0.5)
+        sleep(0.5)
         logging.info("Работа программы завершена")
-        sys.exit()
+        exit()
 
     def enter_path(self):
-        logging.info("Запущен enter_path!")
         while True:
-            logging.info("Запрашиваем путь к папке с игрой")
-            print("Не вводите ничего, чтобы использовать стандартный путь %appdata%/.minecraft\nc - отмена")
-            inp = str(input("Введите путь к папке с игрой: "))
-            logging.info(f"Пользователь ввел {inp}")
-            inp = inp.replace('"', '')
-            if inp.replace(" ", "") == "":
-                if os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
-                    inp = "default"
-                    logging.info("Выбран стандартный путь %appdata%/.minecraft")
-                    print("Выбран стандартный путь %appdata%/.minecraft")
-                    break
-                else:
-                    print("Ooooops! Стандартный путь не существует, выберите другой!\n*******")
-            elif inp.lower() == "c":
-                print("Редактирование отменено")
-                inp = self.game_directory
-                break
-            elif not os.path.exists(inp):
-                print("Путь не существует!\n*******")
-                logging.info("Ooooops! Путь не существует")
+            path = filedialog.askdirectory(initialdir=f'{os.environ["appdata"]}\\.minecraft')
+            if path != '':
+                return path
             else:
-                logging.info("Введен действительный путь")
-                print("Введен действительный путь")
-                break
-        time.sleep(1)
-        os.system("cls")
-        return str(inp)
+                print("Редактирование отменено")
+                time.sleep(1)
+                return self.game_directory
 
-    def setup_logger(self, mode=0):
+    def setup_logger(self):
         if not os.path.exists(f"{self.userappdata}\\logs"):
             os.makedirs(f"{self.userappdata}\\logs")
-        if mode == 0:
-            logging.basicConfig(level=logging.DEBUG,
-                                filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
-                                         f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
-                                         f"{self.dt.year}.log", filemode="w+",
-                                format="%(asctime)s #%(levelname)s, %(funcName)s(): %(message)s")
-        else:
-            logging.basicConfig(level=logging.DEBUG,
-                                format="%(asctime)s #%(levelname)s: %(message)s")
+        logging.basicConfig(level=logging.DEBUG,
+                            filename=f"{self.userappdata}\\logs\\{self.dt.hour}_{self.dt.minute}_"
+                                     f"{self.dt.second}_at_{self.dt.day}_{self.dt.month}_"
+                                     f"{self.dt.year}.log", filemode="w+",
+                            format="%(asctime)s #%(levelname)s, %(funcName)s(): %(message)s")
 
     def read_config(self):
         logging.info("Read_config запущен")
@@ -146,7 +123,7 @@ class MineSquid:
 
     def ui(self):
         logging.info("UI запущен")
-        print("Привет!")
+        print(f"Привет, {os.getlogin()}!")
         print("Версия программы: " + self.version)
         print(f'Путь к папке с игрой: {self.game_directory}')
         print("Список модпаков:  ")
@@ -172,19 +149,19 @@ class MineSquid:
         if selector == "re":
             self.restore_backup()
         elif selector == "set":
-            os.system("cls")
             print("Редактирование конфига...")
             logging.info("Введена команда set, начат процесс изменения пути к папке с игрой...")
             self.edit_config()
             raise Restart
         elif selector == "upd":
+            logging.info('Пользователь ввел upd')
             self.update()
-            sys.exit()
+            exit()
         elif selector == "?":
-            subprocess.Popen(f"notepad {self.program_directory}\\readME.txt")
+            Popen(f"notepad {self.program_directory}\\readME.txt")
             raise Restart
         elif selector == "q" or selector == "quit":
-            logging.info("Пользователь ввел команду q!")
+            logging.info("Пользователь ввел q!")
             self.finish()
         else:
             selector = int(selector)
@@ -192,6 +169,7 @@ class MineSquid:
                 logging.error("Пользователь ввел '0'!!!")
                 raise ZeroSelector
             else:
+                logging.info(f'Пользователь ввел {selector}')
                 self.load_modpack(selector - 1)
 
     def build_list(self):
@@ -208,9 +186,10 @@ class MineSquid:
         self.config.set("paths", "game_path", self.enter_path())
         with open(f"{self.userappdata}\\config.ini", "w") as f:
             self.config.write(f)
-        logging.info('Конфиг создан успешно')
+        logging.info('Конфиг отредактирован успешно')
 
     def repair_config(self):
+        logging.warning('Запуск восстановление конфига!')
         if os.path.exists(f"{self.userappdata}\\config.ini"):
             os.remove(f"{self.userappdata}\\config.ini")
         else:
@@ -220,6 +199,7 @@ class MineSquid:
             self.config.set("paths", "game_path", "default")
             self.config.write(cfg)
         self.edit_config()
+        logging.info('Конфиг восстановлен')
 
     def load_modpack(self, modpack_number):
         if self.game_directory != 'не назначена':
@@ -228,16 +208,16 @@ class MineSquid:
             print("работаю..")
             logging.info("Начата работа над модпаком...")
             pb1 = Bar("Выполнение", max=4, fill='@')
-            shutil.rmtree(f"{self.userappdata}\\backup")
+            rmtree(f"{self.userappdata}\\backup")
             logging.info("Удален текущий бэкап")
             pb1.next()
-            shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
+            copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
             logging.info("Сделан бэкап текущих модов")
             pb1.next()
-            shutil.rmtree(f"{self.game_directory}\\mods")
+            rmtree(f"{self.game_directory}\\mods")
             logging.info("Папка mods удалена")
             pb1.next()
-            shutil.copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
+            copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
             logging.info("Модпак скопирован в папку mods")
             logging.info("ГОТОВО!")
             pb1.next()
@@ -246,7 +226,7 @@ class MineSquid:
             self.finish()
         else:
             print("Папка с игрой не указана!")
-            time.sleep(1.5)
+            sleep(1.5)
             raise Restart
 
     def restore_backup(self):
@@ -257,16 +237,16 @@ class MineSquid:
             if os.path.exists(f"{self.game_directory}\\mods"):
                 pb2.next()
                 bob = True
-                shutil.copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
+                copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
                 logging.info("Бэкап сделан перед восстановлением бэкапа)")
-                shutil.rmtree(f"{self.game_directory}\\mods")
+                rmtree(f"{self.game_directory}\\mods")
                 logging.info("Папка mods удалена")
             else:
                 pb2.next()
-            shutil.copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
+            copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
             pb2.next()
             if bob:
-                shutil.rmtree(f"{self.userappdata}\\backup")
+                rmtree(f"{self.userappdata}\\backup")
                 os.rename(f"{self.userappdata}\\bob", f"{self.userappdata}\\backup")
             else:
                 pass
@@ -277,18 +257,18 @@ class MineSquid:
             self.finish()
         else:
             print("Папка с игрой не указана!")
-            time.sleep(1.5)
+            sleep(1.5)
             raise Restart
 
     def update(self):
         logging.info("Начата проверка обновлений...")
         print("Проверка обновлений...")
         try:
-            version_url = "https://raw.githubusercontent.com/Skrepysh/mineSquid/main/version.txt"
+            version_url = "https://raw.githubusercontent.com/Skrepysh/mineSquid/master/version.txt"
             version = requests.get(version_url).text.replace('\n', '')
         except Exception:
             print("Не удалось проверить обновления(((\nПроверьте подключение к интернету")
-            time.sleep(1.5)
+            sleep(1.5)
             raise Restart
         if float(version) > float(self.version):
             print(f"Найдена новая версия программы: {version}")
@@ -305,30 +285,30 @@ class MineSquid:
                     open("mineSquidUpdate.exe", "wb").write(requests.get(update_url, allow_redirects=True).content)
                 except Exception:
                     print("Не удалось скачать обновление(((\nПроверьте подключение к интернету")
-                    time.sleep(1.5)
+                    sleep(1.5)
                     raise Restart
                 print("Запускаю процесс установки...")
                 logging.info("Запускаю процесс установки...")
                 if os.path.exists(f'{os.environ["temp"]}\\mineSquidUpdate.exe'):
-                    subprocess.Popen(f'{os.environ["temp"]}\\mineSquidUpdate.exe /Silent')
+                    Popen(f'{os.environ["temp"]}\\mineSquidUpdate.exe /Silent')
                 else:
                     print("При обновлении произошла ошибка!")
-                sys.exit()
+                exit()
             else:
                 logging.info("Обновление отменено")
                 print("Обновление отменено")
-                time.sleep(1)
+                sleep(1)
                 raise Restart
         else:
             logging.info("Обновлений нет")
             print("Обновлений нет")
-            time.sleep(1)
+            sleep(1)
             raise Restart
 
     def run(self):
         os.chdir(self.userappdata)
         if os.path.exists(f"{self.game_directory}\\tempfiles\\") and self.game_directory != 'не назначена':
-            shutil.rmtree(f"{self.game_directory}\\tempfiles")
+            rmtree(f"{self.game_directory}\\tempfiles")
         else:
             pass
         if self.game_directory != 'не назначена':

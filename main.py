@@ -1,10 +1,10 @@
-import os
+from os import system, getcwd
 import time
-import argparse
+from argparse import ArgumentParser
 from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
 
-parser = argparse.ArgumentParser(description='Привет!')
+parser = ArgumentParser(description='Привет!')
 group1 = parser.add_mutually_exclusive_group()
 group1.add_argument("--mpname", default=0, help="используйте --mpname [имя модпака] для создания ярлыков быстрого "
                                                 "доступа к определенным модпакам ПО ИМЕНИ"
@@ -19,7 +19,7 @@ group1.add_argument("--mpnum", default=0, help="используйте --mpnum [
 group1.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.19"
+program_version = "2.20"
 ok = MineSquid(program_version)
 logging = ok.logging
 
@@ -30,7 +30,7 @@ while True:
         ok.read_config()
         ok.checker()
         ok.build_list()
-        logging.info(f'Путь к программе: {os.getcwd()}')
+        logging.info(f'Путь к программе: {ok.program_directory}')
         logging.info(f'Путь к игре: {ok.game_directory}')
         logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
         if (int(args.mpnum) != 0 and int(args.mpnum) > 0) and int(args.mpnum) < len(ok.list) - 1:
@@ -77,10 +77,10 @@ while True:
     except Restart:
         print("Перезапуск...")
         logging.info("Программа перезапускается...")
-        os.system("cls")
+        system("cls")
         pass
     except Exception as err:
-        os.system("cls")
+        system("cls")
         logging.error("Неизвестная ошибка!!")
         print("Неизвестная ошибка, смотри логи")
         logging.exception(err)
