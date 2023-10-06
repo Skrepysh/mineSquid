@@ -231,30 +231,35 @@ class MineSquid:
 
     def restore_backup(self):
         if self.game_directory != 'не назначена':
-            bob = False
-            logging.info("Пользователь запустил восстановление бэкапа")
-            pb2 = Bar("Восстановление", max=3, fill='@')
-            if os.path.exists(f"{self.game_directory}\\mods"):
-                pb2.next()
-                bob = True
-                copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
-                logging.info("Бэкап сделан перед восстановлением бэкапа)")
-                rmtree(f"{self.game_directory}\\mods")
-                logging.info("Папка mods удалена")
+            if len(os.listdir(f"{self.userappdata}\\backup")) == 0:
+                print("Бэкап отсутствует, восстанавливать нечего")
+                sleep(1)
+                raise Restart
             else:
+                bob = False
+                logging.info("Пользователь запустил восстановление бэкапа")
+                pb2 = Bar("Восстановление", max=3, fill='@')
+                if os.path.exists(f"{self.game_directory}\\mods"):
+                    pb2.next()
+                    bob = True
+                    copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
+                    logging.info("Бэкап сделан перед восстановлением бэкапа)")
+                    rmtree(f"{self.game_directory}\\mods")
+                    logging.info("Папка mods удалена")
+                else:
+                    pb2.next()
+                copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
                 pb2.next()
-            copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
-            pb2.next()
-            if bob:
-                rmtree(f"{self.userappdata}\\backup")
-                os.rename(f"{self.userappdata}\\bob", f"{self.userappdata}\\backup")
-            else:
-                pass
-            logging.info("Бэкап восстановлен")
-            pb2.next()
-            pb2.finish()
-            print("Бэкап восстановлен")
-            self.finish()
+                if bob:
+                    rmtree(f"{self.userappdata}\\backup")
+                    os.rename(f"{self.userappdata}\\bob", f"{self.userappdata}\\backup")
+                else:
+                    pass
+                logging.info("Бэкап восстановлен")
+                pb2.next()
+                pb2.finish()
+                print("Бэкап восстановлен")
+                self.finish()
         else:
             print("Папка с игрой не указана!")
             sleep(1.5)

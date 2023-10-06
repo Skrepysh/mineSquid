@@ -1,4 +1,4 @@
-from os import system, getcwd
+from os import system
 import time
 from argparse import ArgumentParser
 from minesquid import MineSquid, ZeroSelector, Restart
@@ -19,7 +19,7 @@ group1.add_argument("--mpnum", default=0, help="используйте --mpnum [
 group1.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.20"
+program_version = "2.21"
 ok = MineSquid(program_version)
 logging = ok.logging
 
