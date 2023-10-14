@@ -19,10 +19,9 @@ group1.add_argument("--mpnum", default=0, help="используйте --mpnum [
 group1.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.21"
+program_version = "2.22"
 ok = MineSquid(program_version)
 logging = ok.logging
-
 while True:
     try:
         ok.setup_logger()
@@ -33,7 +32,7 @@ while True:
         logging.info(f'Путь к программе: {ok.program_directory}')
         logging.info(f'Путь к игре: {ok.game_directory}')
         logging.info(f'Путь к папке с пользовательскими данными: {ok.userappdata}')
-        if (int(args.mpnum) != 0 and int(args.mpnum) > 0) and int(args.mpnum) < len(ok.list) - 1:
+        if (int(args.mpnum) != 0 and int(args.mpnum) > 0) and int(args.mpnum) < len(ok.list)+1:
             ok.load_modpack(modpack_number=(int(args.mpnum) - 1))
         elif str(args.mpname) in ok.list:
             ok.load_modpack(modpack_number=ok.list.index(args.mpname))

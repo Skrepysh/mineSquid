@@ -3,7 +3,7 @@ from configparser import ConfigParser
 import logging
 import os
 from sys import exit, argv
-from shutil import rmtree, copytree
+from shutil import rmtree, copy
 from time import sleep
 from progress.bar import Bar
 from datetime import datetime
@@ -23,6 +23,7 @@ class Restart(Exception):
 
 class MineSquid:
     def __init__(self, version):
+        self.username = os.getlogin()
         self.dt = datetime.now()
         self.user_choice = ""
         self.list = []
@@ -78,7 +79,8 @@ class MineSquid:
             self.repair_config()
             raise Restart
         self.config.read(f"{self.userappdata}\\config.ini")
-        game_directory = self.config["paths"]["game_path"].replace('"', '').replace('/', '\\')
+        game_directory = self.config['options']['game_path'].replace('"', '').replace('/', '\\')
+        custom_username = self.config['options']['custom_username']
         logging.info("Конфиг прочитан")
         if game_directory == "default" and os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
             self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
@@ -86,6 +88,10 @@ class MineSquid:
             self.game_directory = game_directory
         else:
             pass
+        if custom_username == 'default':
+            pass
+        else:
+            self.username = custom_username
         logging.info("Конфиг обработан")
 
     def checker(self):
@@ -123,7 +129,7 @@ class MineSquid:
 
     def ui(self):
         logging.info("UI запущен")
-        print(f"Привет, {os.getlogin()}!")
+        print(f"Привет, {self.username}!")
         print("Версия программы: " + self.version)
         print(f'Путь к папке с игрой: {self.game_directory}')
         print("Список модпаков:  ")
@@ -177,13 +183,13 @@ class MineSquid:
             os.chdir(f"{self.userappdata}\\modpacks")
             self.list = [e for e in os.listdir() if os.path.isdir(e)]
         else:
-            self.list = ["Папка с игрой не назначена", "Модпаки недоступны"]
+            self.list = ["Папка с игрой не назначена", "Модпаки недоступны", "Для выбора папки введите set"]
         logging.info("Составлен список модпаков")
 
     def edit_config(self):
         logging.info('Запущен edit_config')
         logging.info("Начато редактирование config файла")
-        self.config.set("paths", "game_path", self.enter_path())
+        self.config.set("options", "game_path", self.enter_path())
         with open(f"{self.userappdata}\\config.ini", "w") as f:
             self.config.write(f)
         logging.info('Конфиг отредактирован успешно')
@@ -195,8 +201,9 @@ class MineSquid:
         else:
             pass
         with open(f"{self.userappdata}\\config.ini", "w") as cfg:
-            self.config.add_section("paths")
-            self.config.set("paths", "game_path", "default")
+            self.config.add_section("options")
+            self.config.set("options", "game_path", "default")
+            self.config.set("options", "custom_username", "default")
             self.config.write(cfg)
         self.edit_config()
         logging.info('Конфиг восстановлен')
@@ -204,24 +211,33 @@ class MineSquid:
     def load_modpack(self, modpack_number):
         if self.game_directory != 'не назначена':
             self.user_choice = self.list[modpack_number]
+            fileslist1 = os.listdir(f"{self.userappdata}\\modpacks\\{self.user_choice}")
+            fileslist2 = os.listdir(f"{self.game_directory}\\mods")
             print("Выбрана версия " + self.user_choice)
             print("работаю..")
             logging.info("Начата работа над модпаком...")
-            pb1 = Bar("Выполнение", max=4, fill='@')
-            rmtree(f"{self.userappdata}\\backup")
+            pb1 = Bar("Резервное коп-е", max=len(fileslist2), fill='@')
+            for file in os.listdir(f'{self.userappdata}\\backup'):
+                os.remove(f'{self.userappdata}\\backup\\{file}')
             logging.info("Удален текущий бэкап")
-            pb1.next()
-            copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\backup")
+            for file in fileslist2:
+                copy(src=f"{self.game_directory}\\mods\\{file}", dst=f"{self.userappdata}\\backup")
+                pb1.next()
             logging.info("Сделан бэкап текущих модов")
-            pb1.next()
-            rmtree(f"{self.game_directory}\\mods")
-            logging.info("Папка mods удалена")
-            pb1.next()
-            copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
+            pb1.finish()
+            pb2 = Bar("Выполнение", max=len(fileslist1)+1, fill='@')
+            for file in os.listdir(f"{self.game_directory}\\mods\\"):
+                os.remove(f"{self.game_directory}\\mods\\{file}")
+            logging.info("Папка mods очищена")
+            pb2.next()
+            for file in fileslist1:
+                copy(src=f"{self.userappdata}\\modpacks\\{self.user_choice}\\{file}",
+                     dst=f"{self.game_directory}\\mods")
+                pb2.next()
+            # copytree(f"{self.userappdata}\\modpacks\\{self.user_choice}", f"{self.game_directory}\\mods\\")
             logging.info("Модпак скопирован в папку mods")
             logging.info("ГОТОВО!")
-            pb1.next()
-            pb1.finish()
+            pb2.finish()
             print("готово")
             self.finish()
         else:
@@ -236,19 +252,31 @@ class MineSquid:
                 sleep(1)
                 raise Restart
             else:
+                fileslist = os.listdir(f"{self.game_directory}\\mods")
+                fileslist2 = os.listdir(f'{self.userappdata}\\backup')
                 bob = False
                 logging.info("Пользователь запустил восстановление бэкапа")
-                pb2 = Bar("Восстановление", max=3, fill='@')
                 if os.path.exists(f"{self.game_directory}\\mods"):
-                    pb2.next()
+                    pb1 = Bar("Резервное коп-е", max=len(fileslist), fill='@')
                     bob = True
-                    copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
+                    if not os.path.exists(f"{self.userappdata}\\bob\\"):
+                        os.mkdir(f"{self.userappdata}\\bob\\")
+                    # copytree(f"{self.game_directory}\\mods", f"{self.userappdata}\\bob", dirs_exist_ok=True)
+                    for file in fileslist:
+                        copy(f"{self.game_directory}\\mods\\{file}", f"{self.userappdata}\\bob\\")
+                        pb1.next()
                     logging.info("Бэкап сделан перед восстановлением бэкапа)")
-                    rmtree(f"{self.game_directory}\\mods")
-                    logging.info("Папка mods удалена")
+                    for file in os.listdir(f'{self.game_directory}\\mods'):
+                        os.remove(f'{self.game_directory}\\mods\\{file}')
+                    logging.info("Папка mods очищена")
+                    pb1.finish()
                 else:
+                    pass
+                pb2 = Bar('Восстановление', max=len(fileslist2)+2, fill='@')
+                for file in fileslist2:
+                    copy(f'{self.userappdata}\\backup\\{file}', f'{self.game_directory}\\mods')
                     pb2.next()
-                copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
+                # copytree(f"{self.userappdata}\\backup", f"{self.game_directory}\\mods\\")
                 pb2.next()
                 if bob:
                     rmtree(f"{self.userappdata}\\backup")
