@@ -57,14 +57,16 @@ class MineSquid:
         logging.info('Открыты настройки')
         print('1 - изменить путь к папке с игрой\n2 - изменить имя пользователя, '
               'отображаемое в программе\n3 - выход\n*')
-        input1 = input("Выберите настройку: ")
+        input1 = input(f"Выберите настройку: {Fore.RED}")
+        print(Fore.RESET, end='\r')
         if str(input1) == '1':
             logging.info('Начат процесс изменения пути к папке с игрой')
             self.edit_config('options', 'game_path', self.enter_path())
             time.sleep(0.5)
         elif str(input1) == '2':
             logging.info('Начат процесс изменения пользовательского никнейма')
-            username = input('Введите новое имя пользователя(default - сбросить имя): ')
+            username = input(f'Введите новое имя пользователя(default - сбросить имя): {Fore.RED}')
+            print(Fore.RESET, end='\r')
             if username != 'default':
                 self.edit_config('options', 'custom_username', username)
             else:
@@ -81,7 +83,7 @@ class MineSquid:
         while True:
             path = filedialog.askdirectory(initialdir=f'{os.environ["appdata"]}\\.minecraft')
             if path == '':
-                print("Редактирование отменено")
+                print(Fore.RED + "Редактирование отменено")
                 time.sleep(1)
                 return self.game_directory
             elif path.replace('\\', '').replace('/', '') == path[:2]:
@@ -191,7 +193,8 @@ class MineSquid:
               "\n? - открыть readME\nq - выход")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
         logging.info("Ждем выбора модпака пользователем...")
-        selector = str(input("Выберите модпак: "))
+        selector = str(input(f"Выберите модпак: {Fore.RED}"))
+        print(Fore.RESET, end='\r')
         if selector == "re":
             self.restore_backup()
         elif selector == "set":
@@ -222,9 +225,10 @@ class MineSquid:
         if self.game_directory != 'не назначена':
             os.chdir(f"{self.userappdata}\\modpacks")
             self.list = [e for e in os.listdir() if os.path.isdir(e)]
+            logging.info("Составлен список модпаков")
         else:
             self.list = ["Папка с игрой не назначена", "Модпаки недоступны", Fore.RED + "Для выбора папки введите set"]
-        logging.info("Составлен список модпаков")
+            logging.info("Папка с игрой не назначена!")
 
     def edit_config(self, section, option, what):
         logging.info('Запущен edit_config')
@@ -298,7 +302,7 @@ class MineSquid:
             print(Fore.GREEN + "Готово")
             self.finish()
         else:
-            print("Папка с игрой не указана!")
+            print(Fore.RED + "Папка с игрой не назначена!")
             sleep(1.5)
             raise Restart
 
@@ -358,7 +362,7 @@ class MineSquid:
                 print(Fore.GREEN + "Бэкап восстановлен")
                 self.finish()
         else:
-            print("Папка с игрой не указана!")
+            print(Fore.RED + "Папка с игрой не назначена!")
             sleep(1.5)
             raise Restart
 
@@ -366,19 +370,20 @@ class MineSquid:
         logging.info("Начата проверка обновлений...")
         print("Проверка обновлений...")
         try:
-            version_url = "https://raw.githubusercontent.com/Skrepysh/mineSquid/master/version.txt"
+            version_url = 'https://raw.githubusercontent.com/Skrepysh/mineSquid/master/version.txt'
             version = requests.get(version_url).text.replace('\n', '')
         except Exception:
             print("Не удалось проверить обновления(((\nПроверьте подключение к интернету")
             sleep(1.5)
             raise Restart
         if float(version) > float(self.version):
-            print(f"Найдена новая версия программы: {version}")
+            print(f"Найдена новая версия программы: {Fore.GREEN + version}")
             logging.info(f"Найдена новая версия программы: {version}!")
-            accept = input("Выполнить обновление? Y - да, N - нет: ")
+            accept = input(f"Выполнить обновление? {Fore.GREEN}Y{Fore.RESET} - да, {Fore.RED}N{Fore.RESET} - нет: {Fore.CYAN}")
+            print(Fore.RESET, end='\r')
             if accept.lower() == "y":
                 logging.info("Обновление подтверждено")
-                print("Скачиваю обновление...")
+                print(Fore.CYAN + "Скачиваю обновление...")
                 try:
                     logging.info("Скачивание...")
                     update_url = (f"https://github.com/Skrepysh/mineSquid/releases/download/v{version}"
@@ -386,24 +391,24 @@ class MineSquid:
                     os.chdir(os.environ['temp'])
                     open("mineSquidUpdate.exe", "wb").write(requests.get(update_url, allow_redirects=True).content)
                 except Exception:
-                    print("Не удалось скачать обновление(((\nПроверьте подключение к интернету")
+                    print(Fore.RED + "Не удалось скачать обновление(((\nПроверьте подключение к интернету")
                     sleep(1.5)
                     raise Restart
                 print("Запускаю процесс установки...")
-                logging.info("Запускаю процесс установки...")
+                logging.info(Fore.CYAN + "Запускаю процесс установки...")
                 if os.path.exists(f'{os.environ["temp"]}\\mineSquidUpdate.exe'):
                     Popen(f'{os.environ["temp"]}\\mineSquidUpdate.exe /Silent')
                 else:
-                    print("При обновлении произошла ошибка!")
+                    print(Fore.RED + "При обновлении произошла ошибка!")
                 exit()
             else:
                 logging.info("Обновление отменено")
-                print("Обновление отменено")
+                print(Fore.RED + "Обновление отменено")
                 sleep(1)
                 raise Restart
         else:
             logging.info("Обновлений нет")
-            print("Обновлений нет")
+            print(Fore.LIGHTMAGENTA_EX + "Обновлений нет")
             sleep(1)
             raise Restart
 
