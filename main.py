@@ -1,9 +1,10 @@
+import configparser
 from os import system
-import time
 from argparse import ArgumentParser
 from minesquid import MineSquid, ZeroSelector, Restart
 from tkinter import messagebox as msg
 from colorama import Fore
+
 
 parser = ArgumentParser(description='Привет!')
 group1 = parser.add_mutually_exclusive_group()
@@ -20,7 +21,7 @@ group1.add_argument("--mpnum", default=0, help="используйте --mpnum [
 group1.add_argument("--restore", default=0, nargs='?', const=1, help="используйте --restore, чтобы восстановить бэкап")
 args = parser.parse_args()
 
-program_version = "2.24"
+program_version = "2.25"
 program = MineSquid(program_version)
 logging = program.logging
 if __name__ == "__main__":
@@ -46,12 +47,23 @@ if __name__ == "__main__":
         except KeyError as err:
             logging.error("KeyError")
             logging.exception(err)
-            program.repair_config()
+            a = program.repair_config()
+            if a == 'restart_required':
+                program.repair_config()
+        except configparser.ParsingError as err:
+            logging.error("ParsingError")
+            logging.exception(err)
+            a = program.repair_config()
+            if a == 'restart_required':
+                program.repair_config()
         except IndexError as err:
             logging.error("IndexError")
             logging.exception(err)
-            print(Fore.RED + f"Неверное значение!{Fore.MAGENTA}\nПерезапуск")
-            program.error()
+            print(Fore.RED + "Неверное значение!")
+            a = program.err_pause()
+            if a == 'disabled':
+                print(f"{Fore.MAGENTA}Перезапуск")
+            program.error(nosleep=True)
         except PermissionError as err:
             logging.error("PermissionError")
             logging.exception(err)
@@ -62,13 +74,19 @@ if __name__ == "__main__":
             exit()
         except ZeroSelector:
             logging.error("ZeroSelector")
-            print(Fore.RED + f"Неверное значение!{Fore.MAGENTA}\nПерезапуск")
-            program.error()
+            print(Fore.RED + "Неверное значение")
+            a = program.err_pause()
+            if a == 'disabled':
+                print(f"{Fore.MAGENTA}Перезапуск")
+            program.error(nosleep=True)
         except ValueError as err:
             logging.error("ValueError")
             logging.exception(err)
-            print(Fore.RED + f"Неверное значение!{Fore.MAGENTA}\nПерезапуск")
-            program.error()
+            print(Fore.RED + "Неверное значение!")
+            a = program.err_pause()
+            if a == 'disabled':
+                print(f"{Fore.MAGENTA}Перезапуск")
+            program.error(nosleep=True)
         except FileNotFoundError as err:
             logging.error("FileNotFoundError")
             logging.exception(err)
@@ -87,5 +105,5 @@ if __name__ == "__main__":
             logging.error("Неизвестная ошибка!!")
             print(Fore.RED + f"Неизвестная ошибка, смотри {Fore.MAGENTA}логи")
             logging.exception(err)
-            time.sleep(7)
+            program.err_pause()
             break
