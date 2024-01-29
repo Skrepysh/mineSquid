@@ -37,6 +37,8 @@ class MineSquid:
         self.program_directory = os.path.dirname(os.path.abspath(argv[0]))  # папка, где расположена сама программа
         self.userappdata = f'{os.environ["appdata"]}\\mineSquid'  # папка с данными (модпаками, бэкапом, настройками)
         self.wait_on_error = 1  # ожидание enter при ошибке, включено по умолчанию
+        self.quit_on_finish = 0  # выход из программы после загрузки МП/восстановления бэкапа, включен по умолчанию
+        self.cmd_args = 0  # используются ли аргументы командной строки
         self.config = ConfigParser()  # конфиг
         self.logging = logging  # логирование
         init(autoreset=True)  # инит модуля Colorama. Внесение настройки автосброса цвета после каждого print()
@@ -44,9 +46,9 @@ class MineSquid:
 
     def error(self, nosleep):
         if not nosleep:
-            sleep(0.5)
+            sleep(0.3)
         elif self.wait_on_error == 0:
-            sleep(0.5)
+            sleep(0.3)
         os.system("cls")
 
     @staticmethod
@@ -61,12 +63,21 @@ class MineSquid:
             string = str(Fore.RED + '>>>' + Fore.RESET)
             input(string)
         else:
-            return 'disabled'
+            return True
+
+    def finish_pause(self):
+        if self.quit_on_finish == 0 and self.cmd_args == 0:
+            string = str(Fore.RED + '>>>' + Fore.RESET)
+            input(string)
+            os.system('cls')
+        else:
+            self.finish()
 
     def settings(self):
         logging.info('Открыты настройки')
         print('1 - изменить путь к папке с игрой\n2 - изменить имя пользователя, '
-              'отображаемое в программе\n3 - включить/выключить ожидание enter при ошибке\n4 - выход\n*')
+              'отображаемое в программе\n3 - включить/выключить ожидание enter при ошибке\n4 - включить/выключить '
+              'выход из программы после загрузки модпака\n5 - выход\n*')
         input1 = input(f"Выберите настройку: {Fore.RED}")
         print(Fore.RESET, end='\r')
         if str(input1) == '1':
@@ -82,6 +93,7 @@ class MineSquid:
                 self.edit_config('options', 'custom_username', 'default')
             time.sleep(0.2)
         elif str(input1) == '3':
+            logging.info('Открыта настройка ожидания enter при ошибке')
             wait_on_errss = input(f'Включить/выключить ожидание enter при ошибке (1 - вкл, 0 - выкл): {Fore.RED}')
             if wait_on_errss == "1":
                 self.edit_config('options', 'err_pause', '1')
@@ -89,26 +101,48 @@ class MineSquid:
                 self.edit_config('options', 'err_pause', '0')
             else:
                 print(Fore.RED + 'Неверное значение!')
+                a = self.err_pause()
+                if a:
+                    sleep(1)
             time.sleep(0.2)
         elif str(input1) == '4':
+            logging.info('Открыта настройка выхода из программы после загрузки МП')
+            quit_on_finish = input(f'включить/выключить выход из программы '
+                                   f'после загрузки модпака (1 - вкл, 0 - выкл): {Fore.RED}')
+            if quit_on_finish == "1":
+                self.edit_config('options', 'fin_quit', '1')
+            elif quit_on_finish == "0":
+                self.edit_config('options', 'fin_quit', '0')
+            else:
+                print(Fore.RED + 'Неверное значение!')
+                a = self.err_pause()
+                if a:
+                    sleep(1)
+            time.sleep(0.2)
+        elif str(input1) == '5':
             logging.info('Выход из настроек...')
             time.sleep(0.2)
         else:
-            print('Неизвестный параметр')
-            self.err_pause()
+            print(Fore.RED + 'Неизвестный параметр')
+            a = self.err_pause()
+            if a:
+                sleep(1)
 
     def enter_path(self):
         while True:
             path = filedialog.askdirectory(initialdir=f'{os.environ["appdata"]}\\.minecraft')
             if path == '':
                 print(Fore.RED + "Редактирование отменено")
-                self.err_pause()
+                a = self.err_pause()
+                if a:
+                    time.sleep(1)
                 return self.game_directory
             elif path.replace('\\', '').replace('/', '') == path[:2]:
                 logging.warning('Пользователь попытался выбрать корень диска в качестве пути к игре!')
                 logging.info(f'Пользователь выбрал {path}')
                 print(Fore.RED + 'Похоже, в качестве директории игры выбран корень диска\nВ целях безопасности '
                                  f'данных так делать нельзя\n{Fore.MAGENTA}Пожалуйста, выберите другой путь')
+                self.err_pause()
             else:
                 return path
 
@@ -137,18 +171,8 @@ class MineSquid:
         game_directory = self.config['options']['game_path'].replace('"', '').replace('/', '\\')
         custom_username = self.config['options']['custom_username']
         wait_on_errs = self.config['options']['err_pause']
+        quit_on_finish = self.config['options']['fin_quit']
         logging.info("Конфиг прочитан")
-        if game_directory == "default" and os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
-            self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
-        elif os.path.exists(game_directory):
-            if game_directory.replace('\\', '').replace('/', '') == game_directory[:2]:
-                print(Fore.RED+'Похоже, в качестве директории игры выбран корень диска\nВ целях безопасности '
-                      f'данных так делать нельзя\n{Fore.MAGENTA}Пожалуйста, выберите другой путь')
-                self.edit_config('options', 'game_path', self.enter_path())
-            else:
-                self.game_directory = game_directory
-        else:
-            pass
         if custom_username == 'default':
             self.username = os.getlogin()
         else:
@@ -157,6 +181,22 @@ class MineSquid:
             self.wait_on_error = 1
         else:
             self.wait_on_error = 0
+        if int(quit_on_finish) == 0:
+            self.quit_on_finish = 0
+        else:
+            self.quit_on_finish = 1
+        if game_directory == "default" and os.path.exists(f'{os.environ["appdata"]}\\.minecraft'):
+            self.game_directory = f'{os.environ["appdata"]}\\.minecraft'
+        elif os.path.exists(game_directory):
+            if game_directory.replace('\\', '').replace('/', '') == game_directory[:2]:
+                print(Fore.RED + 'Похоже, в качестве директории игры выбран корень диска\nВ целях безопасности '
+                                 f'данных так делать нельзя\n{Fore.MAGENTA}Пожалуйста, выберите другой путь')
+                self.err_pause()
+                self.edit_config('options', 'game_path', self.enter_path())
+            else:
+                self.game_directory = game_directory
+        else:
+            pass
         logging.info("Конфиг обработан")
 
     def checker(self):
@@ -196,7 +236,7 @@ class MineSquid:
         logging.info("UI запущен")
         print(f"Привет, {Fore.RED + self.username}!")
         print("Версия программы: " + Fore.GREEN + self.version)
-        print(f'Путь к папке с игрой: {Fore.CYAN+self.game_directory}')
+        print(f'Путь к папке с игрой: {Fore.CYAN + self.game_directory}')
         print("Список модпаков:  ")
         print("*")
         counter = 1
@@ -213,7 +253,7 @@ class MineSquid:
                 counter += 1
         print("*")
         print("re - восстановление бэкапа\nset - открыть настройки\nupd - обновление программы"
-              "\n? - открыть readME\nq - выход")
+              "\n? - открыть readME")
         logging.info(f"Количество модпаков: {int(counter) - 1}")
         logging.info("Ждем выбора модпака пользователем...")
         selector = str(input(f"Выберите модпак: {Fore.RED}"))
@@ -232,7 +272,7 @@ class MineSquid:
         elif selector == "?":
             Popen(f"notepad {self.program_directory}\\readME.txt")
             raise Restart
-        elif selector == "q" or selector == "quit":
+        elif selector.replace(' ', '') == "":
             logging.info("Пользователь ввел q!")
             self.finish()
         else:
@@ -245,12 +285,13 @@ class MineSquid:
                 self.load_modpack(selector - 1)
 
     def build_list(self):
-        if self.game_directory != 'не назначена':
-            os.chdir(f"{self.userappdata}\\modpacks")
-            self.list = [e for e in os.listdir() if os.path.isdir(e)]
-            logging.info("Составлен список модпаков")
-        else:
-            self.list = ["Папка с игрой не назначена", "Модпаки недоступны", Fore.RED + "Для выбора папки введите set"]
+        os.chdir(f"{self.userappdata}\\modpacks")
+        self.list = [e for e in os.listdir() if os.path.isdir(e)]
+        logging.info("Составлен список модпаков")
+        if self.game_directory == 'не назначена':
+            a = [Fore.MAGENTA + "Папка с игрой не назначена", Fore.RED + "Для выбора папки введите set"]
+            for x in a:
+                self.list.append(x)
             logging.info("Папка с игрой не назначена!")
 
     def edit_config(self, section, option, what):
@@ -259,7 +300,10 @@ class MineSquid:
         self.config.set(section, option, what)
         with open(f"{self.userappdata}\\config.ini", "w") as f:
             self.config.write(f)
-        logging.info('Конфиг отредактирован успешно')
+        if self.config[section][option] == what:
+            logging.info('Конфиг отредактирован успешно, данные сверены')
+        else:
+            logging.error('Редактирование конфига не удалось, данные не совпали')
 
     def repair_config(self):
         tempparser = ConfigParser()
@@ -269,6 +313,7 @@ class MineSquid:
             tempparser.set("options", "game_path", "default")
             tempparser.set("options", "custom_username", "default")
             tempparser.set("options", "err_pause", "1")
+            tempparser.set("options", "fin_quit", "0")
             tempparser.write(cfg)
         self.read_config()
         self.edit_config('options', 'game_path', self.enter_path())
@@ -324,11 +369,11 @@ class MineSquid:
             logging.info("ГОТОВО!")
             pb2.finish()
             print(Fore.GREEN + "Готово")
-            self.finish()
+            self.finish_pause()
         else:
             print(Fore.RED + "Папка с игрой не назначена!")
             a = self.err_pause()
-            if a == 'disabled':
+            if a:
                 sleep(1.5)
             raise Restart
 
@@ -336,7 +381,9 @@ class MineSquid:
         if self.game_directory != 'не назначена':
             if len(os.listdir(f"{self.userappdata}\\backup")) == 0:
                 print("Бэкап отсутствует, восстанавливать нечего")
-                sleep(1)
+                a = self.err_pause()
+                if a:
+                    sleep(1)
                 raise Restart
             else:
                 fileslist = os.listdir(f"{self.game_directory}\\mods")
@@ -369,7 +416,7 @@ class MineSquid:
                 else:
                     pass
                 pb2 = Bar(Fore.LIGHTMAGENTA_EX + "Восстановление" + Fore.CYAN,
-                          max=len(fileslist2)+2, fill=Fore.GREEN + '@' + Fore.CYAN)
+                          max=len(fileslist2) + 2, fill=Fore.GREEN + '@' + Fore.CYAN)
                 for file in fileslist2:
                     if os.path.isfile(f'{self.userappdata}\\backup\\{file}'):
                         copy(f'{self.userappdata}\\backup\\{file}', f'{self.game_directory}\\mods')
@@ -388,11 +435,11 @@ class MineSquid:
                 pb2.next()
                 pb2.finish()
                 print(Fore.GREEN + "Бэкап восстановлен")
-                self.finish()
+                self.finish_pause()
         else:
             print(Fore.RED + "Папка с игрой не назначена!")
             a = self.err_pause()
-            if a == 'disabled':
+            if a:
                 sleep(1.5)
             raise Restart
 
@@ -404,7 +451,9 @@ class MineSquid:
             version = requests.get(version_url).text.replace('\n', '')
         except Exception:
             print("Не удалось проверить обновления(((\nПроверьте подключение к интернету")
-            sleep(1.5)
+            a = self.err_pause()
+            if a:
+                sleep(1.5)
             raise Restart
         if float(version) > float(self.version):
             print(f"Найдена новая версия программы: {Fore.GREEN + version}")
@@ -423,7 +472,9 @@ class MineSquid:
                     open("mineSquidUpdate.exe", "wb").write(requests.get(update_url, allow_redirects=True).content)
                 except Exception:
                     print(Fore.RED + "Не удалось скачать обновление(((\nПроверьте подключение к интернету")
-                    sleep(1.5)
+                    a = self.err_pause()
+                    if a:
+                        sleep(1.5)
                     raise Restart
                 print("Запускаю процесс установки...")
                 logging.info(Fore.CYAN + "Запускаю процесс установки...")
@@ -435,12 +486,16 @@ class MineSquid:
             else:
                 logging.info("Обновление отменено")
                 print(Fore.RED + "Обновление отменено")
-                sleep(1)
+                a = self.err_pause()
+                if a:
+                    sleep(1)
                 raise Restart
         else:
             logging.info("Обновлений нет")
             print(Fore.LIGHTMAGENTA_EX + "Обновлений нет")
-            sleep(1)
+            a = self.err_pause()
+            if a:
+                sleep(1)
             raise Restart
 
     def run(self):
