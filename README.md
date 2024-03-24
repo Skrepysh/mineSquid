@@ -1,19 +1,26 @@
 # mineSquid
 <p align="left">
   <img src="mineSquid.jpg" width="350" title="mineSquid - modpack switcher for minecraft"> 
-  <img src="gallery\main_tab.png" width="250">
+  <img src="main_tab.png" width="250">
 </p>
 <p align="left">
   <img src="https://forthebadge.com/images/badges/made-with-python.svg" width="150" title="Python">
 <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FSkrepysh%2FmineSquid&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=HITS&edge_flat=false" width="120" title="Hits since 08.09.2023">
 <img src="https://img.shields.io/badge/License-MIT-yellow.svg" width="95" title="MIT">
 </p>
-Проект, который поможет вам переключаться между модпаками в майнкрафте. Для этого поместите все ваши модпаки в папку %appdata%/mineSquid/modpacks* (папка доступна с рабочего стола или из меню пуск, ярлык - Папка с модпаками).<br />
-* - каждый модпак должен находиться в своей собственной папке (например:<br /> /../../minesquid/modpacks/modpack1,<br /> /../../minesquid/modpacks/modpack228,<br /> или /../../minesquid/modpacks/super-puper-modpack)<br />
 
-<h2>Галерея - soon</h2>
+# Описание:
+Проект, который поможет вам переключаться между модпаками в майнкрафте. Для этого поместите все ваши модпаки в папку %appdata%/mineSquid/modpacks* (папка доступна с рабочего стола или из меню пуск, ярлык - Папка с модпаками).</br>
+*каждый модпак должен находиться в своей собственной папке (например:<br /> /../../minesquid/modpacks/modpack1,<br /> /../../minesquid/modpacks/modpack228,<br /> или /../../minesquid/modpacks/super-puper-modpack)<br />
 
-<h3>Установка:</h3>
+<h1>Навигация:</h1>
+
+### [# Описание](#описание)
+### [# Установка](#установка)
+### [# Инструкция](#инструкция)
+### [# Галерея](#галерея)
+
+# Установка:
 <h4>Метод первый:</h4>
 
 1. Установите программу с помощью winget:<br />
@@ -29,7 +36,8 @@
 4. Ознакомьтесь с инструкцией ниже<br />
 5. ПРОФИТ<br />
 
-<h3>Инструкция:</h3>
+# Инструкция:
+
 1. Откройте программу<br /><br />
 2. Назначьте папку с игрой. Для этого перейдите на вкладку "Настройки", нажмите обзор и выберите папку, где расположена игра Minecraft.
 Затем нажмите "Применить"<br /><br />
@@ -39,3 +47,30 @@
 \* Чтобы восстановить все содержимое папки mods, удаленное при загрузке выбранного модпака, нажмите кнопку с круглой стрелкой и часами (кнопка восстановления) в нижней части интерфейса программы.<br /> 
 \** Если вы нажали кнопку восстановления случайно, нажмите ее повторно, чтобы вернуть все как было<br /><br />
 5. Если вам нужны (или наоборот - не нужны) оповещения об успешной загрузке модпака или восстановлении резервной копии (с помощью кнопки восстановления), вы можете настроить их отображение на вкладке "Настройки". По завершению настройки, не забывайте нажимать кнопку "Применить"
+
+# Галерея:
+
+<details><summary>Главная</summary>
+ <p align="left">
+<img src="gallery\main_tab.png">
+<img src="gallery\light_theme.png">
+</p>
+</details>
+<details><summary>Логи</summary>
+ <p align="left">
+<img src="gallery\log_tab.png">
+</p>
+</details>
+<details><summary>Настройки</summary>
+ <p align="left">
+<img src="gallery\settings_tab.png">
+<img src="gallery\incorrect_settings_warning.png">
+</p>
+</details>
+<details><summary>Диалоговые окна</summary>
+ <p align="left">
+<img src="gallery\update_check.png">
+<img src="gallery\backup_restored.png">
+<img src="gallery\modpack_loaded.png">
+</p>
+</details>
