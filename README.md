@@ -1,7 +1,7 @@
 # mineSquid
 <p align="left">
   <img src="mineSquid.jpg" width="350" title="mineSquid - modpack switcher for minecraft"> 
-  <img src="main_tab.png" width="250">
+  <img src="gallery\main_tab.png" width="250">
 </p>
 <p align="left">
   <img src="https://forthebadge.com/images/badges/made-with-python.svg" width="150" title="Python">
