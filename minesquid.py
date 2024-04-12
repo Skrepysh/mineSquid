@@ -3,33 +3,60 @@ import flet as ft
 import os
 from tkinter import filedialog
 from shutil import rmtree, copytree
-from datetime import datetime
 from sys import argv
 from configparser import ConfigParser
 import requests
 from subprocess import Popen
 
-program_version = '3.0'
+program_version = '3.1'
+build_date = '12.04.2024'
 
 
 class MineSquid:
 
-    def __init__(self, minesquid_version):
-        self.username = os.getlogin()  # пользовательское имя, отображается при запуске программы
-        self.dt = datetime.now()  # текущее время
+    def __init__(self, minesquid_version='nope', minesquid_build_date='nope'):
         self.mp_list = []  # список модпаков (пуст при запуске)
         self.game_directory = ''  # папка с игрой, по умолчанию не назначена
-        self.game_directory_exists = False
-        self.program_directory = os.path.dirname(os.path.abspath(argv[0]))  # папка, где расположена сама программа
-        self.program_version = minesquid_version
-        self.build_date = '15.03.2024'
+        self.game_directory_exists = False  # существует ли папка с игрой
+        self.program_directory = os.path.dirname(os.path.abspath(argv[0]))  # папка, где расположена программа
+        self.program_version = minesquid_version  # версия программы
+        self.build_date = minesquid_build_date  # дата сборки
         self.userappdata = f'{os.environ["appdata"]}\\mineSquid'  # папка с данными (модпаками, бэкапом, настройками)
         self.config = ConfigParser()  # конфиг
-        self.default_status = 'готов к работе'
 
     def main(self, page: ft.Page):
         themes = ['dark', 'light']
         states = ['ERROR', 'OK']
+        colors = {
+            'cyanaccent200': ft.colors.CYAN_ACCENT_200,  # бирюзовый (стандартный)
+            'redaccent700': ft.colors.RED_ACCENT_700,  # красный
+            'green': ft.colors.GREEN,  # зеленый
+            'lightgreenaccent400': ft.colors.LIGHT_GREEN_ACCENT_400,  # салатовый
+            'blue': ft.colors.BLUE,  # синий
+            'pink': ft.colors.PINK,  # розовый
+            'pink300': ft.colors.PINK_300,  # светло-розовый
+            'deeppurple': ft.colors.DEEP_PURPLE,  # темно-фиолетовый
+            'purple': ft.colors.PURPLE,  # фиолетовый
+            'purpleaccent': ft.colors.PURPLE_ACCENT,  # светло-фиолетовый 
+            'deeporange': ft.colors.DEEP_ORANGE,  # оранжевый
+            'orange': ft.colors.ORANGE,  # светло-оранжевый
+            'yellow': ft.colors.YELLOW,  # желтый
+        }
+        color_names = {
+            'cyanaccent200': "Бирюзовый",
+            'redaccent700': "Красный",
+            'green': "Зелёный",
+            'lightgreenaccent400': 'Салатовый',
+            'blue': "Синий",
+            'pink': "Розовый",
+            'pink300': "Светло-розовый",
+            'deeppurple': "Темно-фиолетовый",
+            'purple': "Фиолетовый",
+            'purpleaccent': "Светло-фиолетовый",
+            'deeporange': "Оранжевый",
+            'orange': "Светло-оранжевый",
+            'yellow': 'Жёлтый',
+        }
         error_message = ''
         page.theme_mode = themes[0]
         page.title = 'mineSquid'
@@ -39,69 +66,93 @@ class MineSquid:
         page.window_min_width = 375
         page.horizontal_alignment = page.vertical_alignment = "center"
         page.radio = ft.RadioGroup(radio := ft.ListView())
+        page.splash = ft.ProgressBar()
+        page.splash.visible = False
 
         def pick_folder(e):
             folder_field.value = enter_path()
             folder_field.error_text = ''
+            check_settings()
             page.update()
 
         def select_folder(e):
             edit_config('options', 'game_path', a := enter_path())
             folder_field.value = a
-            close_dlg(0)
             refresh(0)
 
         def open_mpfolder(e):
             Popen(f'explorer {self.userappdata}\\modpacks')
 
-        def close_dlg(e):
-            page.dialog.open = False
-            page.update()
+        def close_dlg(e=0):
+            if page.dialog is not None:
+                if page.dialog.open:
+                    page.dialog.open = False
+                    page.update()
 
-        def open_dlg(e):
+        def open_dlg(e=0):
             page.dialog.open = True
             page.update()
 
-        def check_folder_field(e):
-            if os.path.exists(e.control.value):
+        def check_settings(e=0):
+            folder_field_ok = True
+            width_field_ok = True
+            height_field_ok = True
+
+            if os.path.exists(folder_field.value):
+                folder_field_ok = True
                 folder_field.error_text = ''
             else:
+                folder_field_ok = False
                 folder_field.error_text = 'Указанный путь не найден'
-            page.update()
 
-        def check_window_size_field(e):
-            if len(e.control.value) > 0 and int(e.control.value) > 2560:
-                e.control.error_text = 'Слишком большое значение'
-                apply_btn.disabled = True
-            elif (len(e.control.value) > 0 and
-                  ((int(e.control.value) < 375 and e.control.label == 'Ширина окна') or
-                   (int(e.control.value) < 650 and e.control.label == 'Высота окна'))):
-                e.control.error_text = 'Слишком маленькое значение'
-                apply_btn.disabled = True
-            elif len(e.control.value) == 0:
-                width_and_height_ok = False
-                apply_btn.disabled = True
-                e.control.error_text = 'Поле не может быть пустым'
+            if len(width_field.value) == 0:
+                width_field.error_text = 'Поле не может быть пустым'
+                width_field_ok = False
+            elif int(width_field.value) < 375:
+                width_field.error_text = 'Слишком маленькое значение'
+                width_field_ok = False
+            elif int(width_field.value) > 2560:
+                width_field.error_text = 'Слишком большое значение'
             else:
+                width_field.error_text = ''
+                width_field_ok = True
+
+            if len(height_field.value) == 0:
+                height_field.error_text = 'Поле не может быть пустым'
+                height_field_ok = False
+            elif int(height_field.value) < 650:
+                height_field.error_text = 'Слишком маленькое значение'
+                height_field_ok = False
+            elif int(height_field.value) > 2560:
+                height_field.error_text = 'Слишком большое значение'
+            else:
+                height_field.error_text = ''
+                height_field_ok = True
+
+            if folder_field_ok and (width_field_ok and height_field_ok):
                 apply_btn.disabled = False
-                e.control.error_text = ''
+            else:
+                apply_btn.disabled = True
+
             page.update()
 
         def apply_settings(e):
             log_add('*' * 16)
             log_add('Применение настроек')
             folder_ok = False
-            dlg_ok = True  # Че может пойти не так?
+            checkboxes_ok = True  # Че может пойти не так?
             width_and_height_ok = False
             if os.path.exists(a := folder_field.value):
                 folder_ok = True
+            else:
+                folder_field.error_text = 'Указанный путь не найден'
             if (375 <= int(width_field.value) <= 2560) and (650 <= int(height_field.value) <= 2560):
                 width_and_height_ok = True
             log_add(f'Папка с игрой...{states[int(folder_ok)]}')
-            log_add(f'Диалоги...{states[int(dlg_ok)]}')
+            log_add(f'Чекбоксы...{states[int(checkboxes_ok)]}')
             log_add(f'Высота и ширина окна...{states[int(width_and_height_ok)]}')
 
-            if folder_ok and dlg_ok and width_and_height_ok:
+            if folder_ok and checkboxes_ok and width_and_height_ok:
 
                 edit_config('options', 'game_path', a)
                 folder_field.error_text = ''
@@ -114,14 +165,18 @@ class MineSquid:
                 edit_config('options', 'window_height', str(height_field.value))
                 edit_config('options', 'window_width', str(width_field.value))
 
+                edit_config('options', 'compact_ui', str(compact_ui_checkbox.value))
+
+                edit_config('options', 'ui_color', colors[ui_color_dropdown.value])
+
                 log_add('Настройки применены успешно')
                 page.dialog = dlg_settings_applied
-                open_dlg(0)
+                open_dlg()
                 read_config()
             else:
                 log_add('Обнаружены некорректные настройки, не удалось применить')
                 page.dialog = dlg_incorrect_settings
-                open_dlg(0)
+                open_dlg()
             log_add('*' * 16)
 
         def reset_settings(e):
@@ -131,23 +186,25 @@ class MineSquid:
             log_add("Настройки сброшены")
             read_config()
             log_add('*' * 16)
-            close_dlg(0)
+            check_settings()
+            close_dlg()
 
         def open_reset_settings_dlg(e):
             page.dialog = dlg_confirm_reset_settings
-            open_dlg(0)
+            open_dlg()
 
         def refresh(e):
             log_add('*' * 16)
             log_add('Обновление данных')
             prepare_main_tab()
             read_config()
+            check_settings()
             log_add('Данные обновлены')
             log_add('*' * 16)
 
         def about(e):
             page.dialog = dlg_about_minesquid
-            open_dlg(0)
+            open_dlg()
 
         def log_add(what):
             log.controls.append(ft.Text('- ' + what))
@@ -159,13 +216,15 @@ class MineSquid:
         def enter_path():
             path = filedialog.askdirectory(initialdir=f'{os.environ["appdata"]}\\.minecraft')
             if path == '':
+                close_dlg()
                 page.dialog = dlg_edit_cancel
-                open_dlg(0)
+                open_dlg()
                 if self.game_directory != '':
                     return self.game_directory
                 else:
                     return ''
             else:
+                close_dlg()
                 return path
 
         def build_list():
@@ -187,7 +246,9 @@ class MineSquid:
                 'mp_load_dlg': 'False',
                 'theme': 'dark',
                 'window_height': '750',
-                'window_width': '450'
+                'window_width': '450',
+                'ui_color': 'cyanaccent200',
+                'compact_ui': 'True'
             }
             if 'restore_section' in kwargs:
                 with open(f'{self.userappdata}\\config.ini', 'w') as cfg:
@@ -202,7 +263,14 @@ class MineSquid:
         def read_config():
             self.config.read(f"{self.userappdata}\\config.ini", encoding="windows-1251")
 
-            options = ['game_path', 'mp_load_dlg', 'backup_restore_dlg', 'theme', 'window_width', 'window_height']
+            options = ['game_path',
+                       'mp_load_dlg',
+                       'backup_restore_dlg',
+                       'theme', 'window_width',
+                       'window_height',
+                       'ui_color',
+                       'compact_ui'
+                       ]
 
             if not self.config.has_section('options'):
                 log_add('Конфиг отсутствует')
@@ -220,6 +288,8 @@ class MineSquid:
             config_theme = self.config['options']['theme']
             config_width = self.config['options']['window_width']
             config_height = self.config['options']['window_height']
+            config_ui_color = self.config['options']['ui_color']
+            config_compact_ui = self.config['options']['compact_ui']
 
             if os.path.exists(config_game_directory):  # Обработка пути к папке с игрой
                 self.game_directory = config_game_directory
@@ -258,9 +328,28 @@ class MineSquid:
             width_field.error_text = ''
             height_field.error_text = ''
 
+            ui_color_dropdown.value = colors[config_ui_color]  # ставим текущий цвет в выпадающий список
+            if config_compact_ui == 'True':
+                page.theme = ft.Theme(
+                    color_scheme_seed=colors[ui_color_dropdown.value],
+                    visual_density=ft.ThemeVisualDensity.COMPACT
+                )
+                compact_ui_checkbox.value = True
+            else:
+                page.theme = ft.Theme(
+                    color_scheme_seed=colors[ui_color_dropdown.value],
+                    visual_density=ft.ThemeVisualDensity.COMFORTABLE
+                )
+                compact_ui_checkbox.value = False
+            page.appbar.bgcolor = colors[ui_color_dropdown.value]  # ставим цвет аппбара
+            page.bottom_appbar.bgcolor = colors[ui_color_dropdown.value]  # ставим цвет нижнего аппбара
+            page.splash.color = colors[ui_color_dropdown.value]  # ставим цвет сплэша (прогрессбара)
+            page.splash.update()  # обновляем сплэш (почему он не обновляется сам)
+
             log_add(f"Путь к папке с игрой: {self.game_directory}")
             log_add(f"Ширина окна: {config_width}")
             log_add(f"Высота окна: {config_height}")
+            log_add(f'Цвет интерфейса: {color_names[config_ui_color]}')
 
             page.update()
 
@@ -362,8 +451,8 @@ class MineSquid:
             title=ft.Text('О программе'),
             content=ft.Text(
                 f'mineSquid версии {self.program_version}\n'
-                f'by Skrepysh\n'
-                f'Дата сборки: {self.build_date}'
+                f'Дата сборки: {self.build_date}\n'
+                f'by Skrepysh'
             ),
             actions_alignment=ft.MainAxisAlignment.END,
             actions=[
@@ -384,7 +473,6 @@ class MineSquid:
                 copytree(f"{self.game_directory}\\mods",
                          f"{self.userappdata}\\backup", dirs_exist_ok=True)
                 log_add('Бэкап создан')
-                # pb1.finish()
             else:
                 log_add('Бэкап не требуется')
             rmtree(f"{self.game_directory}\\mods")
@@ -444,7 +532,7 @@ class MineSquid:
                 page.update()
                 radio.controls.clear()
                 for x in self.mp_list:
-                    a = ft.Radio(value=x, label=x, active_color=ft.colors.CYAN_ACCENT_200)
+                    a = ft.Radio(value=x, label=x, )
                     radio.controls.append(a)
                 main_tab.content = page.radio
                 page.floating_action_button.disabled = False
@@ -462,25 +550,25 @@ class MineSquid:
             if not page.radio.value:
                 log_add('Модпак не выбран, отмена операции')
                 page.dialog = dlg_mp
-                open_dlg(0)
+                open_dlg()
             else:
                 page.floating_action_button.disabled = True
                 restore_btn.disabled = True
                 page.update()
                 if self.game_directory_exists:
                     log_add('Все ок, начинаю загрузку...')
-                    progressbar.visible = True
+                    page.splash.visible = True
                     page.update()
                     load_modpack(self.mp_list.index(page.radio.value))
-                    progressbar.visible = False
+                    page.splash.visible = False
                     if open_dlg_mp_loaded_checkbox.value:
                         page.dialog = dlg_mp_loaded
-                        open_dlg(0)
+                        open_dlg()
                     page.update()
                 else:
                     log_add('Не назначена папка с игрой, отмена операции')
                     page.dialog = dlg_papka
-                    open_dlg(0)
+                    open_dlg()
                 page.floating_action_button.disabled = False
                 restore_btn.disabled = False
                 page.update()
@@ -495,20 +583,20 @@ class MineSquid:
             if self.game_directory_exists:
                 if len(os.listdir(f"{self.userappdata}\\backup")) > 0:  # Если папка с бэкапом не пуста
                     log_add('Все ок, начинаю восстановление')
-                    progressbar.visible = True
+                    page.splash.visible = True
                     page.update()
                     restore_backup()
-                    progressbar.visible = False
+                    page.splash.visible = False
                     if open_dlg_backup_restored_checkbox.value:
                         page.dialog = dlg_backup_restored
-                        open_dlg(0)
+                        open_dlg()
                 else:
                     log_add('Бэкап отсутствует, отмена операции')
                     page.dialog = dlg_nobackup
-                    open_dlg(0)
+                    open_dlg()
             else:
                 page.dialog = dlg_papka
-                open_dlg(0)
+                open_dlg()
                 log_add('Папка с игрой не назначена, отмена операции')
             page.floating_action_button.disabled = False
             restore_btn.disabled = False
@@ -518,6 +606,7 @@ class MineSquid:
         def check_for_updates(e):
             log_add('*' * 16)
             log_add('Проверка обновлений...')
+            log_add(f'Текущая версия программы {self.program_version}')
             global new_version
             try:
                 repo = 'https://raw.githubusercontent.com/Skrepysh/mineSquid/master/version.txt'
@@ -529,27 +618,48 @@ class MineSquid:
                 dlg_update1.content = ft.Text('Не удалось проверить наличие обновлений.\n'
                                               'Проверьте подключение к интернету!')
                 page.dialog = dlg_update1
-                open_dlg(0)
+                open_dlg()
                 return
-            if float(new_version) > float(self.program_version):
-                log_add(f"Найдена новая версия программы: {new_version}")
+
+            current_version_major = self.program_version.partition('.')[0]
+            current_version_minor = self.program_version[len(current_version_major) + 1:]
+            new_version_major = new_version.partition('.')[0]
+            new_version_minor = new_version[len(new_version_major) + 1:]
+            current_version_major = int(current_version_major)
+            current_version_minor = int(current_version_minor)
+            new_version_major = int(new_version_major)
+            new_version_minor = int(new_version_minor)
+
+            def update_available():
+                log_add(f'Найдена новая версия программы: {new_version}')
                 dlg_update_available.content = ft.Text(f'Найдена новая версия программы: {new_version}\nУстановить?')
                 page.dialog = dlg_update_available
-                open_dlg(0)
-            else:
+                open_dlg()
+
+            def no_updates():
                 dlg_update1.title = ft.Text('Информация')
                 dlg_update1.content = ft.Text('У вас установлена последняя версия программы!')
                 page.dialog = dlg_update1
-                open_dlg(0)
+                open_dlg()
+
+            if current_version_major < new_version_major:
+                update_available()
+            elif current_version_major == new_version_major:
+                if new_version_minor > current_version_minor:
+                    update_available()
+                else:
+                    no_updates()
+            else:
+                no_updates()
             log_add('*' * 16)
 
         def install_update(e):
             log_add('*' * 16)
             log_add('Начало установки обновления')
-            progressbar.visible = True
+            page.splash.visible = True
             page.update()
             global new_version
-            close_dlg(0)
+            close_dlg()
             update_url = (f"https://github.com/Skrepysh/mineSquid/releases/download/v{new_version}"
                           f"/mineSquid_v{new_version}_setup.exe")
             try:
@@ -560,7 +670,7 @@ class MineSquid:
                 dlg_update1.title = ft.Text('Ошибка')
                 dlg_update1.content = ft.Text('Не удалось скачать обновление')
                 page.dialog = dlg_update1
-                open_dlg(0)
+                open_dlg()
                 return
             log_add('Обновление скачано')
             if os.path.exists(f'{os.environ["temp"]}\\mineSquidUpdate.exe'):
@@ -573,23 +683,23 @@ class MineSquid:
                     dlg_update1.title = ft.Text('Ошибка')
                     dlg_update1.content = ft.Text('Не удалось установить обновление')
                     page.dialog = dlg_update1
-                    open_dlg(0)
+                    open_dlg()
             else:
                 log_add("Файл обновления потерялся, отмена операции")
                 dlg_update1.title = ft.Text('Ошибка')
                 dlg_update1.content = ft.Text('Не удалось установить обновление')
                 page.dialog = dlg_update1
-                open_dlg(0)
+                open_dlg()
             log_add('*' * 16)
-            progressbar.visible = False
+            page.splash.visible = False
             page.update()
 
         def cancel_update(e):
             log_add('Обновление отменено пользователем')
             log_add('*' * 16)
-            close_dlg(0)
+            close_dlg()
 
-        def check_folders_and_run():
+        def check_folders():
             if not os.path.exists(f"{self.userappdata}"):
                 os.mkdir(self.userappdata)
             if not os.path.exists(a := f"{self.userappdata}\\modpacks"):
@@ -624,7 +734,6 @@ class MineSquid:
                 width=25,
                 height=25
             ),
-            bgcolor=ft.colors.CYAN_ACCENT_200,
             title=ft.Text(f'mineSquid {self.program_version}', color=ft.colors.BLACK),
             center_title=True,
             actions=[
@@ -638,7 +747,6 @@ class MineSquid:
         )
 
         page.bottom_appbar = ft.BottomAppBar(
-            bgcolor=ft.colors.CYAN_ACCENT_200,
             shape=ft.NotchShape.CIRCULAR,
             content=ft.Row(
                 controls=[
@@ -648,8 +756,6 @@ class MineSquid:
                         on_click=refresh,
                         tooltip="Обновить данные"
                     ),
-                    progressbar := ft.ProgressBar(width=200, color=ft.colors.BLUE_ACCENT_700,
-                                                  bgcolor=ft.colors.BLUE_ACCENT_100, visible=False),
                     ft.Container(expand=True),
                     ft.IconButton(
                         tooltip='Папка с модпаками',
@@ -660,8 +766,7 @@ class MineSquid:
                     restore_btn := ft.IconButton(tooltip='Восстановить бэкап',
                                                  icon=ft.icons.RESTORE,
                                                  bgcolor=ft.colors.BLACK,
-                                                 icon_color=ft.colors.CYAN_ACCENT_200,
-                                                 on_click=restore
+                                                 on_click=restore,
                                                  ),
                     theme_btn := ft.IconButton(icon=ft.icons.WB_SUNNY_OUTLINED,
                                                icon_color=ft.colors.BLACK,
@@ -690,18 +795,17 @@ class MineSquid:
                 ),
                 ft.Tab(
                     text='Настройки',
-                    content=ft.Column(
+                    content=ft.ListView(
                         controls=[
-                            ft.Container(),
+                            ft.Container(padding=5),
                             ft.Row(
                                 controls=[
                                     folder_field := ft.TextField(
                                         hint_text='Введите путь к папке с игрой',
                                         label='Путь к папке с игрой',
                                         value='',
-                                        on_change=check_folder_field,
+                                        on_change=check_settings,
                                         error_text='',
-                                        focused_border_color=ft.colors.CYAN_ACCENT_200,
                                         expand=True,
                                         border_color=ft.colors.GREY
                                     ),
@@ -709,10 +813,10 @@ class MineSquid:
                                         text='Обзор...',
                                         width=page.window_width * 0.23,
                                         on_click=pick_folder,
-                                        color=ft.colors.CYAN_ACCENT_200
                                     ),
                                 ]
                             ),
+                            ft.Container(padding=5),
                             ft.Row(
                                 controls=[
                                     width_field := ft.TextField(
@@ -721,10 +825,10 @@ class MineSquid:
                                         value=page.window_width,
                                         input_filter=ft.NumbersOnlyInputFilter(),
                                         error_text='',
-                                        on_change=check_window_size_field,
-                                        focused_border_color=ft.colors.CYAN_ACCENT_200,
+                                        on_change=check_settings,
                                         expand=True,
                                         border_color=ft.colors.GREY,
+                                        suffix_text='px'
                                     ),
                                     ft.Text('X', size=24),
                                     height_field := ft.TextField(
@@ -733,49 +837,56 @@ class MineSquid:
                                         value=page.window_height,
                                         input_filter=ft.NumbersOnlyInputFilter(),
                                         error_text='',
-                                        on_change=check_window_size_field,
-                                        focused_border_color=ft.colors.CYAN_ACCENT_200,
+                                        on_change=check_settings,
                                         expand=True,
-                                        border_color=ft.colors.GREY
+                                        border_color=ft.colors.GREY,
+                                        suffix_text='px'
                                     ),
                                 ]
+                            ),
+                            ft.Container(padding=5),
+                            ui_color_dropdown := ft.Dropdown(
+                                label='Цвет интерфейса',
+                                options=[]
+                            ),
+                            compact_ui_checkbox := ft.Checkbox(
+                                label='Компактный вид интерфейса',
+                                value=True
                             ),
                             open_dlg_mp_loaded_checkbox := ft.Checkbox(
                                 label='Оповещать об успешной загрузке модпака',
                                 value=False,
-                                active_color=ft.colors.CYAN_ACCENT_200
                             ),
                             open_dlg_backup_restored_checkbox := ft.Checkbox(
                                 label='Оповещать об успешном восстановлении бэкапа',
                                 value=True,
-                                active_color=ft.colors.CYAN_ACCENT_200
                             ),
+                            ft.Container(padding=5),
                             ft.Row(
                                 controls=[
                                     apply_btn := ft.ElevatedButton(
                                         text='Применить',
                                         expand=True,
                                         on_click=apply_settings,
-                                        color=ft.colors.CYAN_ACCENT_200
                                     )
                                 ]
                             ),
+                            ft.Container(padding=5),
                             ft.Row(
                                 controls=[
                                     ft.ElevatedButton(
                                         text='Проверка обновлений',
                                         expand=True,
                                         on_click=check_for_updates,
-                                        color=ft.colors.CYAN_ACCENT_200,
                                     ),
                                     ft.ElevatedButton(
                                         text='О программе',
                                         expand=True,
                                         on_click=about,
-                                        color=ft.colors.CYAN_ACCENT_200
                                     )
                                 ]
                             ),
+                            ft.Container(padding=5),
                             ft.Row(
                                 controls=[
                                     ft.ElevatedButton(
@@ -785,14 +896,13 @@ class MineSquid:
                                         on_click=open_reset_settings_dlg
                                     )
                                 ]
-                            )
+                            ),
+                            ft.Container(padding=15) # чтобы при слишком маленькой высоте окна кнопка сброса настроек не перекрывалась кнопкой GO
                         ]
                     ),
                 ),
             ],
             expand=1,
-            label_color=ft.colors.CYAN_ACCENT_200,
-            indicator_color=ft.colors.CYAN_ACCENT_200
         )
         page.floating_action_button = ft.FloatingActionButton(
             text='GO',
@@ -803,12 +913,19 @@ class MineSquid:
         page.floating_action_button_location = ft.FloatingActionButtonLocation.CENTER_DOCKED
         page.add(t)
         log_add(f'mineSquid {self.program_version} запущен')
-        check_folders_and_run()
+        check_folders()
         read_config()
+        check_settings()
+        for e in colors:
+            a = ft.dropdown.Option(text=color_names[e], key=colors[e])
+            ui_color_dropdown.options.append(a)
         prepare_main_tab()
 
 
-program = MineSquid(program_version)
+program = MineSquid(
+    minesquid_version=program_version,
+    minesquid_build_date=build_date
+)
 
 if __name__ == "__main__":
     ft.app(target=program.main)

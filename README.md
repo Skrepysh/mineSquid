@@ -1,7 +1,7 @@
 # mineSquid
 <p align="left">
   <img src="mineSquid.jpg" width="350" title="mineSquid - modpack switcher for minecraft"> 
-  <img src="gallery\main_tab.png" width="250">
+  <img src="gallery/main_tab.png" width="250">
 </p>
 <p align="left">
   <img src="https://forthebadge.com/images/badges/made-with-python.svg" width="150" title="Python">
@@ -10,7 +10,7 @@
 </p>
 
 # Описание:
-Программа, который поможет вам переключаться между модпаками в майнкрафте. Для этого поместите все ваши модпаки в папку %appdata%/mineSquid/modpacks* (папка доступна с рабочего стола или из меню пуск, ярлык - Папка с модпаками).</br>
+Проект, который поможет вам переключаться между модпаками в майнкрафте. Для этого поместите все ваши модпаки в папку %appdata%/mineSquid/modpacks* (папка доступна с рабочего стола или из меню пуск, ярлык - Папка с модпаками).</br>
 *каждый модпак должен находиться в своей собственной папке (например:<br /> /../../minesquid/modpacks/modpack1,<br /> /../../minesquid/modpacks/modpack228,<br /> или /../../minesquid/modpacks/super-puper-modpack)<br />
 
 <h1>Навигация:</h1>
@@ -52,25 +52,39 @@
 
 <details><summary>Главная</summary>
  <p align="left">
-<img src="gallery\main_tab.png">
-<img src="gallery\light_theme.png">
+<img src="gallery/main_tab.png">
+<img src="gallery/light_theme.png">
 </p>
 </details>
 <details><summary>Логи</summary>
  <p align="left">
-<img src="gallery\log_tab.png">
+<img src="gallery/log_tab.png">
 </p>
 </details>
 <details><summary>Настройки</summary>
  <p align="left">
-<img src="gallery\settings_tab.png">
-<img src="gallery\incorrect_settings_warning.png">
+<img src="gallery/settings_tab.png">
+<img src="gallery/incorrect_settings_warning.png">
 </p>
 </details>
 <details><summary>Диалоговые окна</summary>
  <p align="left">
-<img src="gallery\update_check.png">
-<img src="gallery\backup_restored.png">
-<img src="gallery\modpack_loaded.png">
+<img src="gallery/update_check.png">
+<img src="gallery/backup_restored.png">
+<img src="gallery/modpack_loaded.png">
+</p>
+</details>
+<details><summary>Примеры цветов оформления</summary>
+ <p align="left">
+<img src="gallery/light_green.png">
+<img src="gallery/purple.png">
+<img src="gallery/yellow.png">
+<img src="gallery/orange.png">
+</p>
+</details>
+<details><summary>Сравнение компактного и стандартного UI</summary>
+ <p align="left">
+<img src="gallery/compact_ui.png">
+<img src="gallery/non_compact_ui.png">
 </p>
 </details>
