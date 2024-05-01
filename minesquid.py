@@ -8,8 +8,8 @@ from configparser import ConfigParser
 import requests
 from subprocess import Popen
 
-program_version = '3.1'
-build_date = '12.04.2024'
+program_version = '3.2'
+build_date = '01.05.2024'
 
 
 class MineSquid:
@@ -159,6 +159,7 @@ class MineSquid:
 
                 edit_config('options', 'backup_restore_dlg', str(open_dlg_backup_restored_checkbox.value))
                 edit_config('options', 'mp_load_dlg', str(open_dlg_mp_loaded_checkbox.value))
+                edit_config('options', 'check_current_modpack', str(check_current_modpack_checkbox.value))
 
                 page.window_width = width_field.value
                 page.window_height = height_field.value
@@ -172,7 +173,7 @@ class MineSquid:
                 log_add('Настройки применены успешно')
                 page.dialog = dlg_settings_applied
                 open_dlg()
-                read_config()
+                refresh(0)
             else:
                 log_add('Обнаружены некорректные настройки, не удалось применить')
                 page.dialog = dlg_incorrect_settings
@@ -194,11 +195,15 @@ class MineSquid:
             open_dlg()
 
         def refresh(e):
+            start_time = time.time()
             log_add('*' * 16)
             log_add('Обновление данных')
             prepare_main_tab()
             read_config()
             check_settings()
+            page.radio.value = None
+            end_time = time.time()
+            log_add(f'Затрачено времени: {end_time - start_time}с')
             log_add('Данные обновлены')
             log_add('*' * 16)
 
@@ -230,6 +235,14 @@ class MineSquid:
         def build_list():
             os.chdir(f"{self.userappdata}\\modpacks")
             self.mp_list = [e for e in os.listdir() if os.path.isdir(e)]
+            if check_current_modpack_checkbox.value and os.path.exists(mdir := f'{self.game_directory}\\mods'):
+                current = os.listdir(mdir)
+                for x in self.mp_list:
+                    if os.listdir(x) == current:
+                        index = self.mp_list.index(x)
+                        x1 = f'{x}👈'
+                        self.mp_list[index] = x1
+                        log_add(f'Текущий модпак: {x}')
             log_add('Список модпаков обновлен')
             if not self.game_directory_exists:
                 log_add('Папка с игрой не назначена')
@@ -248,7 +261,8 @@ class MineSquid:
                 'window_height': '750',
                 'window_width': '450',
                 'ui_color': 'cyanaccent200',
-                'compact_ui': 'True'
+                'compact_ui': 'True',
+                'check_current_modpack': 'False'
             }
             if 'restore_section' in kwargs:
                 with open(f'{self.userappdata}\\config.ini', 'w') as cfg:
@@ -269,7 +283,8 @@ class MineSquid:
                        'theme', 'window_width',
                        'window_height',
                        'ui_color',
-                       'compact_ui'
+                       'compact_ui',
+                       'check_current_modpack'
                        ]
 
             if not self.config.has_section('options'):
@@ -290,6 +305,7 @@ class MineSquid:
             config_height = self.config['options']['window_height']
             config_ui_color = self.config['options']['ui_color']
             config_compact_ui = self.config['options']['compact_ui']
+            config_check_current_modpack = self.config['options']['check_current_modpack']
 
             if os.path.exists(config_game_directory):  # Обработка пути к папке с игрой
                 self.game_directory = config_game_directory
@@ -313,6 +329,11 @@ class MineSquid:
             else:
                 open_dlg_backup_restored_checkbox.value = False  # Конец обработки настроек диалогов об успешном
                 # действии
+
+            if config_check_current_modpack == 'True':
+                check_current_modpack_checkbox.value = True
+            else:
+                check_current_modpack_checkbox.value = False
 
             if config_theme == 'dark':
                 page.theme_mode = themes[0]  # Темная тема
@@ -569,6 +590,7 @@ class MineSquid:
                     log_add('Не назначена папка с игрой, отмена операции')
                     page.dialog = dlg_papka
                     open_dlg()
+                refresh(0)
                 page.floating_action_button.disabled = False
                 restore_btn.disabled = False
                 page.update()
@@ -598,6 +620,7 @@ class MineSquid:
                 page.dialog = dlg_papka
                 open_dlg()
                 log_add('Папка с игрой не назначена, отмена операции')
+            refresh(0)
             page.floating_action_button.disabled = False
             restore_btn.disabled = False
             log_add('*' * 16)
@@ -851,15 +874,28 @@ class MineSquid:
                             ),
                             compact_ui_checkbox := ft.Checkbox(
                                 label='Компактный вид интерфейса',
-                                value=True
+                                value=True,
+                                tooltip='Уменьшает расстояние между элементами интерфейса'
                             ),
                             open_dlg_mp_loaded_checkbox := ft.Checkbox(
                                 label='Оповещать об успешной загрузке модпака',
                                 value=False,
+                                tooltip='Если включено, то после загрузки модпака будет показываться диалоговое окно'
                             ),
                             open_dlg_backup_restored_checkbox := ft.Checkbox(
                                 label='Оповещать об успешном восстановлении бэкапа',
                                 value=True,
+                                tooltip='Если включено, '
+                                        'то после восстановления бэкапа будет показываться диалоговое окно'
+                            ),
+                            check_current_modpack_checkbox := ft.Checkbox(
+                                label='Выделять активный модпак',
+                                value=False,
+                                tooltip='Если включено, то программа будет '
+                                        'проверять, какой из имеющихся модпаков '
+                                        'сейчас находится в папке mods, и выделять его символом 👈.\n'
+                                        'ВНИМАНИЕ! НЕ включайте, эту функцию, если у вас слабый ПК или медленный '
+                                        'жесткий диск!'
                             ),
                             ft.Container(padding=5),
                             ft.Row(
@@ -897,7 +933,8 @@ class MineSquid:
                                     )
                                 ]
                             ),
-                            ft.Container(padding=15) # чтобы при слишком маленькой высоте окна кнопка сброса настроек не перекрывалась кнопкой GO
+                            ft.Container(padding=15)  # чтобы при слишком маленькой высоте окна кнопка
+                                                      # сброса настроек не перекрывалась кнопкой GO
                         ]
                     ),
                 ),
