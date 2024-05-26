@@ -8,8 +8,8 @@ from configparser import ConfigParser
 import requests
 from subprocess import Popen
 
-program_version = '3.2'
-build_date = '01.05.2024'
+program_version = '3.3'
+build_date = '26.05.2024'
 
 
 class MineSquid:
@@ -30,9 +30,10 @@ class MineSquid:
         colors = {
             'cyanaccent200': ft.colors.CYAN_ACCENT_200,  # бирюзовый (стандартный)
             'redaccent700': ft.colors.RED_ACCENT_700,  # красный
-            'green': ft.colors.GREEN,  # зеленый
+            'greenaccent700': ft.colors.GREEN_ACCENT_700,  # зеленый
             'lightgreenaccent400': ft.colors.LIGHT_GREEN_ACCENT_400,  # салатовый
             'blue': ft.colors.BLUE,  # синий
+            'indigoaccent400': ft.colors.INDIGO_ACCENT_400,  # Индиго
             'pink': ft.colors.PINK,  # розовый
             'pink300': ft.colors.PINK_300,  # светло-розовый
             'deeppurple': ft.colors.DEEP_PURPLE,  # темно-фиолетовый
@@ -41,11 +42,12 @@ class MineSquid:
             'deeporange': ft.colors.DEEP_ORANGE,  # оранжевый
             'orange': ft.colors.ORANGE,  # светло-оранжевый
             'yellow': ft.colors.YELLOW,  # желтый
+            'limeaccent400': ft.colors.LIME_ACCENT_400,  # Лайм
         }
         color_names = {
             'cyanaccent200': "Бирюзовый",
             'redaccent700': "Красный",
-            'green': "Зелёный",
+            'greenaccent700': "Зелёный",
             'lightgreenaccent400': 'Салатовый',
             'blue': "Синий",
             'pink': "Розовый",
@@ -56,6 +58,8 @@ class MineSquid:
             'deeporange': "Оранжевый",
             'orange': "Светло-оранжевый",
             'yellow': 'Жёлтый',
+            'limeaccent400': 'Лайм',
+            'indigoaccent400': 'Индиго'
         }
         error_message = ''
         page.theme_mode = themes[0]
@@ -349,6 +353,11 @@ class MineSquid:
             width_field.error_text = ''
             height_field.error_text = ''
 
+            if config_ui_color not in colors:
+                a = ft.dropdown.Option(text=config_ui_color, key=config_ui_color)
+                ui_color_dropdown.options.append(a)
+                colors[config_ui_color] = config_ui_color
+                color_names[config_ui_color] = config_ui_color
             ui_color_dropdown.value = colors[config_ui_color]  # ставим текущий цвет в выпадающий список
             if config_compact_ui == 'True':
                 page.theme = ft.Theme(
@@ -396,10 +405,20 @@ class MineSquid:
 
         )
 
-        dlg_nobackup = ft.AlertDialog(
+        dlg_empty_backup = ft.AlertDialog(
             modal=True,
             title=ft.Text('Информация'),
             content=ft.Text('Бэкап отсутствует, восстанавливать нечего'),
+            actions_alignment=ft.MainAxisAlignment.END,
+            actions=[
+                ft.TextButton("OK", on_click=close_dlg),
+            ]
+        )
+
+        dlg_empty_modpack = ft.AlertDialog(
+            modal=True,
+            title=ft.Text('Информация'),
+            content=ft.Text('Выбранный модпак пуст'),
             actions_alignment=ft.MainAxisAlignment.END,
             actions=[
                 ft.TextButton("OK", on_click=close_dlg),
@@ -481,12 +500,11 @@ class MineSquid:
             ]
         )
 
-        def load_modpack(modpack_number):
+        def load_modpack(modpack_name):
             start_time = time.time()
             if not os.path.exists(a := f'{self.game_directory}\\mods'):
                 os.mkdir(a)
-            user_choice = self.mp_list[modpack_number]
-            log_add(f'Выбран модпак {user_choice}')
+            log_add(f'Выбран модпак {modpack_name}')
             log_add('Загрузка...')
             fileslist = os.listdir(f"{self.game_directory}\\mods")
             if len(fileslist) > 0:
@@ -497,9 +515,9 @@ class MineSquid:
             else:
                 log_add('Бэкап не требуется')
             rmtree(f"{self.game_directory}\\mods")
-            copytree(f"{self.userappdata}\\modpacks\\{user_choice}",
+            copytree(f"{self.userappdata}\\modpacks\\{modpack_name}",
                      f"{self.game_directory}\\mods\\", dirs_exist_ok=True)
-            log_add(f'Модпак "{user_choice}" загружен')
+            log_add(f'Модпак "{modpack_name}" загружен')
             end_time = time.time()
             log_add(f'Затрачено времени: {end_time - start_time}с')
 
@@ -553,7 +571,8 @@ class MineSquid:
                 page.update()
                 radio.controls.clear()
                 for x in self.mp_list:
-                    a = ft.Radio(value=x, label=x, )
+                    is_empty = len(os.listdir(f'{self.userappdata}\\modpacks\\{x.replace('👈', '')}')) <= 0
+                    a = ft.Radio(value=x.replace('👈', ''), label=x, disabled=is_empty)
                     radio.controls.append(a)
                 main_tab.content = page.radio
                 page.floating_action_button.disabled = False
@@ -572,6 +591,10 @@ class MineSquid:
                 log_add('Модпак не выбран, отмена операции')
                 page.dialog = dlg_mp
                 open_dlg()
+            elif len(os.listdir(f'{self.userappdata}\\modpacks\\{page.radio.value}')) <= 0:
+                log_add('Модпак пуст, отмена операции')
+                page.dialog = dlg_empty_modpack
+                open_dlg()
             else:
                 page.floating_action_button.disabled = True
                 restore_btn.disabled = True
@@ -580,7 +603,7 @@ class MineSquid:
                     log_add('Все ок, начинаю загрузку...')
                     page.splash.visible = True
                     page.update()
-                    load_modpack(self.mp_list.index(page.radio.value))
+                    load_modpack(page.radio.value)
                     page.splash.visible = False
                     if open_dlg_mp_loaded_checkbox.value:
                         page.dialog = dlg_mp_loaded
@@ -614,7 +637,7 @@ class MineSquid:
                         open_dlg()
                 else:
                     log_add('Бэкап отсутствует, отмена операции')
-                    page.dialog = dlg_nobackup
+                    page.dialog = dlg_empty_backup
                     open_dlg()
             else:
                 page.dialog = dlg_papka
@@ -870,7 +893,7 @@ class MineSquid:
                             ft.Container(padding=5),
                             ui_color_dropdown := ft.Dropdown(
                                 label='Цвет интерфейса',
-                                options=[]
+                                options=[],
                             ),
                             compact_ui_checkbox := ft.Checkbox(
                                 label='Компактный вид интерфейса',
